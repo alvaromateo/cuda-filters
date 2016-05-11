@@ -1,0 +1,13 @@
+Tasques:
+1) Preparar el main per llegir les diferents opcions
+    - tipus de imatge (png, o mes), tamany de filtre, tipus de filtre, etc.
+2) Kernel amb cuda que corri el filtre
+    - asincron
+    - streams
+    - etc
+3) Reservar memoria, dividir el problema (aixo es pot fer dins del kernel)
+  i llençar el kernel
+4) Poder llegir la imatge i posarla dins de una matriu de dades
+    - usar llibreries (libpng o altres)
+5) Adaptar el makefile per incloure les noves llibreries
+6) Opcional: poder obrir la imatge al final del programa.
