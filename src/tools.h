@@ -26,26 +26,60 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 */
 
-// Includes
-#include "tools.h"
+#ifndef TOOLS
+#define TOOLS
 
+// includes
+#include <vector>
+#include <map>
+#include <string>
+#include <iostream>
+#include <exception>
 
+#define DEFAULT_FILTER_SIZE 3
+#define DEFAULT_FILTER_TYPE 0
 
-int main(int argc, char **argv) {
-	CommandLineParser clp(argc, argv); // read commandline options (tools.h)
+typedef std::vector<float> VECTOR;
+typedef std::vector< VECTOR > MATRIX;
 
-	// initialize filter
-	unsigned int filterSize = clp.getFilterSize();
-	FILTER filter(filterSize, VECTOR(filterSize)); // The filter to apply
-	MatrixOperations::initFilter(filter);
+/**
+ * This enums are for the filter types and for the different command line options.
+ * If a new option or type is implemented, add it to the corresponding enum and also
+ * add the corresponding switch case.
+ */
+ 
+enum FilterTypes { 
+	blur = "blur", 
+	sharpen = "sharpen" 
+};
 
-	// load images
-	// Images images(clp.loadImages());
+enum CommandLineOptions {
+	type 
+};
 
-	/*
-	for (auto image : images.getImages()) {
-		// call kernel
-		// show image
-	}
-	*/
-}
+/**
+ * Parser for the command line options
+ */
+class CommandLineParser {
+	public:
+		CommandLineParser(int argc, char **argv);
+		std::vector<string> &getImages() { return images; }
+		unsigned int getFilterSize();
+
+	private:
+		std::vector<string> images;
+		std::map<string, string> opts;
+
+		void doHelp();
+		bool analyze(int argc, char **argv);
+};
+
+/**
+ * Common operations for matrixes
+ */
+class MatrixOperations {
+	public:
+		static void initFilter(FILTER &filter);
+};
+
+#endif

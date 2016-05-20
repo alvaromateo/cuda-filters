@@ -26,26 +26,30 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 */
 
-// Includes
+// includes
 #include "tools.h"
 
 
+/**
+ * Constructor for the parser. When creating the parser object this reads the command line
+ * options and initializes the images vector and the options map.
+ */
+CommandLineParser::CommandLineParser(int argc, char **argv) {
 
-int main(int argc, char **argv) {
-	CommandLineParser clp(argc, argv); // read commandline options (tools.h)
+}
 
-	// initialize filter
-	unsigned int filterSize = clp.getFilterSize();
-	FILTER filter(filterSize, VECTOR(filterSize)); // The filter to apply
-	MatrixOperations::initFilter(filter);
-
-	// load images
-	// Images images(clp.loadImages());
-
-	/*
-	for (auto image : images.getImages()) {
-		// call kernel
-		// show image
+/**
+ * return: the filter size specified in the command line arguments or the default one
+ */
+unsigned int CommandLineParser::getFilterSize() {
+	unsigned int size = DEFAULT_FILTER_SIZE;
+	auto it = opts.find("size");
+	if (it != opts.end()) {
+		try {
+			size = std::stoi(it->second);
+		} catch (exception &e) {
+			doHelp();
+		}
 	}
-	*/
+	return size;
 }

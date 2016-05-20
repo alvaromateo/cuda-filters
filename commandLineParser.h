@@ -4,7 +4,6 @@
 
 cuda-filters == command line program to apply various filters to images
 Copyright (C) 2016  Alvaro Mateo (alvaromateo9@gmail.com)
-					Biel Pieras (bpierasmorell@gmail.com)
 
 **************************************************************************
 
@@ -26,26 +25,17 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 */
 
-// Includes
-#include "tools.h"
+#ifndef COMMANDLINE_OPTS
+#define COMMANDLINE_OPTS
 
+// includes
+#include <vector>
+#include <map>
+#include <string>
+#include <iostream>
 
-
-int main(int argc, char **argv) {
-	CommandLineParser clp(argc, argv); // read commandline options (tools.h)
-
-	// initialize filter
-	unsigned int filterSize = clp.getFilterSize();
-	FILTER filter(filterSize, VECTOR(filterSize)); // The filter to apply
-	MatrixOperations::initFilter(filter);
-
-	// load images
-	// Images images(clp.loadImages());
-
-	/*
-	for (auto image : images.getImages()) {
-		// call kernel
-		// show image
-	}
-	*/
+class commandLineParser {
+	private:
+		vector<string> images;
+		map<string, string> opts;
 }
