@@ -26,40 +26,15 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 */
 
-// Includes
-#include "tools.h"
 #include "test.h"
 
+void CommandLineParserTest::doTest() {
 
-int main(int argc, char **argv) {
-	CommandLineParser clp(argc, argv); // read commandline options (tools.h)
+}
 
-	// test command line
-	CommandLineParserTest clpTest;
-	clpTest.printImages(clp);
-	/*
+void CommandLineParserTest::printImages(CommandLineParser &clp) {
 	std::cout << "Images: " << std::endl;
-	for (string img : clp.loadImages()) {
+	for (std::string img : clp.loadImages()) {
 		std::cout << img << std::endl;
 	}
-	std::cout << "Map: " << std::endl;
-	auto testMap = clpTest.getMap();
-	for (auto it = testMap.cbegin(); it != testMap.cend(); ++it) {
-		std::cout << it->first << " - " << it->second << std::endl;
-	}
-*/
-	// initialize filter
-	unsigned int filterSize = clp.getFilterSize();
-	MATRIX filter(filterSize, VECTOR(filterSize)); // The filter to apply
-	MatrixOperations::initFilter(filter);
-
-	// load images
-	// Images images(clp.loadImages());
-
-	/*
-	for (auto image : images.getImages()) {
-		// call kernel
-		// show image
-	}
-	*/
 }

@@ -35,43 +35,43 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <string>
 #include <iostream>
 #include <exception>
+#include <cstdio>
+#include <utility>
 
-#define DEFAULT_FILTER_SIZE 3
+
+#define DEFAULT_FILTER_SIZE 5
 #define DEFAULT_FILTER_TYPE 0
 
 typedef std::vector<float> VECTOR;
 typedef std::vector< VECTOR > MATRIX;
 
-/**
- * This enums are for the filter types and for the different command line options.
- * If a new option or type is implemented, add it to the corresponding enum and also
- * add the corresponding switch case.
- */
- 
-enum FilterTypes { 
-	blur = "blur", 
-	sharpen = "sharpen" 
-};
-
-enum CommandLineOptions {
-	type 
+enum FilterType {
+	blur,
+	sharpen
 };
 
 /**
  * Parser for the command line options
  */
 class CommandLineParser {
+	friend class Test;
+
 	public:
-		CommandLineParser(int argc, char **argv);
-		std::vector<string> &getImages() { return images; }
-		unsigned int getFilterSize();
+		CommandLineParser(int &argc, char **&argv);
+		std::vector<std::string> &loadImages() { return images; }
+		unsigned short getFilterSize();
 
 	private:
-		std::vector<string> images;
-		std::map<string, string> opts;
+		std::vector<std::string> images;
+		std::map<std::string, unsigned short> opts;
 
+		void initOptions();
+		std::string &getOptionKey(const char *const &argument, int *index);
+		unsigned short getOptionValue(const char *const &argument, const std::string &key);
+		unsigned short transformTypeToInt(const std::string &type);
+		bool isValid(const std::string &key, int *index);
+		bool isImage(const char *const &argument);
 		void doHelp();
-		bool analyze(int argc, char **argv);
 };
 
 /**
@@ -79,7 +79,7 @@ class CommandLineParser {
  */
 class MatrixOperations {
 	public:
-		static void initFilter(FILTER &filter);
+		static void initFilter(MATRIX &filter);
 };
 
 #endif

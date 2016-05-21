@@ -31,25 +31,195 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 
 /**
+ * CommandLineParser public methods
+ */
+
+
+/**
  * Constructor for the parser. When creating the parser object this reads the command line
  * options and initializes the images vector and the options map.
  */
-CommandLineParser::CommandLineParser(int argc, char **argv) {
-
+CommandLineParser::CommandLineParser(int &argc, char **&argv) {
+	int i = 1; // first argv parameter is the program name
+	bool allImagesFound = false;
+	while (!allImagesFound && i < argc) {
+		if (isImage(argv[i])) {
+			images.push_back(std::string(argv[i]));
+		} else {
+			allImagesFound = true; // exit the loop
+		}
+		++i;
+	}
+	// user must input at least one image
+	if (images.empty()) {
+		doHelp(); // exit the program showing the usage
+	}
+	// init map with default values
+	initOptions();
+	
+	while (i < argc) {
+		std::string key = getOptionKey(argv[i], &i);
+		if (i < argc) {
+			opts.insert(std::pair<std::string, unsigned short> (key, getOptionValue(argv[i], key)));
+		}
+		++i;
+	}
 }
 
 /**
  * return: the filter size specified in the command line arguments or the default one
  */
-unsigned int CommandLineParser::getFilterSize() {
+unsigned short CommandLineParser::getFilterSize() {
 	unsigned int size = DEFAULT_FILTER_SIZE;
-	auto it = opts.find("size");
+	std::map<std::string, unsigned short>::const_iterator it = opts.find("size");
 	if (it != opts.end()) {
-		try {
-			size = std::stoi(it->second);
-		} catch (exception &e) {
-			doHelp();
-		}
+		size = it->second;
 	}
 	return size;
+}
+
+
+/**
+ * CommandLineParser private methods
+ */
+
+
+/**
+ * This method initializes the options variable with the keys and values of
+ * the default options.
+ */
+void CommandLineParser::initOptions() {
+	opts.insert(std::pair<std::string, unsigned short> (std::string("size"), DEFAULT_FILTER_SIZE));
+	opts.insert(std::pair<std::string, unsigned short> (std::string("type"), DEFAULT_FILTER_TYPE));
+	opts.insert(std::pair<std::string, unsigned short> (std::string("show"), 0));
+}
+
+/**
+ * This method receives an argv[i] parameter and checks it is a valid option
+ * for the program. If it is then the parameter is transformed to a string.
+ *
+ * return: the string containing the user command line option.
+ */
+std::string &CommandLineParser::getOptionKey(const char *const &argument, int *index) {
+	std::string key();
+	if (argument[0] == '-') {
+		if (argument[1] == '-') {
+			key = (argument + 2);
+		} else {
+			key = (argument + 1);
+		}
+	}
+	if (!isValid(key, index)) {
+		doHelp(); // option not valid. Show usage and exit
+	}
+	return key;
+}
+
+/**
+ * This method receives an argv[i] parameter that contains a value for an option
+ * previously read and the key string corresponding to this value and transforms
+ * the argv[i] value into a number to fit in the opts map.
+ *
+ * return: the number containing the value for the given option.
+ */
+unsigned short CommandLineParser::getOptionValue(const char *const &argument, const std::string &key) {
+	unsigned short value = 0;
+	if (key == "show" || key == "s") {
+		value = 1;
+	} else if (key == "size") {
+		// the size can only be odd values bigger than 3
+		try {
+			value = std::stoul(std::string(argument));
+		} catch (std::exception &e) {
+			doHelp();
+		}
+		// if the number is not odd we substract 1
+		if (value > 2) {
+			if ((value % 2) != 0) {
+				--value;
+			}
+		} else {
+			doHelp();
+		}
+	} else if (key == "type") {
+		// transform the string into a number with transformTypeToInt
+		value = transformTypeToInt(std::string(argument));
+	} else {
+		doHelp();
+	}
+	return value;
+}
+
+/**
+ * This method transforms a filter type string into an unsigned short so that it can
+ * be stored in the options map.
+ *
+ * return: the number corresponding to the string filter type.
+ */
+unsigned short CommandLineParser::transformTypeToInt(const std::string &type) {
+	unsigned short typeNum = 0;
+	// Add different filter types here and in the tools.h enum
+	if (!type.compare("blur")) {
+		typeNum = 0;
+	} else if (!type.compare("sharpen")) {
+		typeNum = 1;
+	} else {
+		doHelp(); // type not valid. Show usage and exit the program
+	}
+	return typeNum;
+}
+
+/*
+ * This method contains all the valid options that can be passed through command
+ * line arguments. If the option must have a value given as input then the index
+ * pointing to "argv" is incremented. If it doesn't need a value (it's just a true
+ * if set, false otherwise option) then the index is not incremented.
+ *
+ * return: a boolean indicating if the option read is valid or not.
+ */
+bool CommandLineParser::isValid(const std::string &key, int *index) {
+	bool valid = false;
+	if (!key.empty()) {
+		if (key == "size" || key == "type") {
+			valid = true;
+			++(*index); // increment index to check for the value
+		} else if (key == "show" || key == "s") {
+			// just set the option as valid and don't increment index
+			// because this option doesn't have any value
+			valid = true; 
+		}
+	}
+	return valid;
+}
+
+bool CommandLineParser::isImage(const char *const &argument) {
+	std::string image(argument);
+	std::string::size_type pos = image.find_last_of('.');
+	if (!image.compare(pos+1, 3, "png")) {
+		return true;
+	}
+	return false;
+}
+
+void CommandLineParser::doHelp() {
+	std::ostringstream help;
+	help << "Usage: cudafilters.exe image.png [image2.png image3.png ...] options" << std::endl;
+	help << "Options can be:" << std::endl;
+	help << "	--size x		where x is an odd number bigger than 2" << std::endl;
+	help << "	--type s 		where s is one of the following filter types:" << std::endl;
+	help << "						blur, sharpen" << std::endl;
+	help << "	--show|-s		if set the modified images are opened when the program finishes" << std::endl;
+	help << "Currently supported images formats: .png" << std::endl;
+	std::cout << help.str() << std::endl;
+	exit(1);
+}
+
+
+/**
+ * MatrixOperations public methods
+ */
+
+
+void MatrixOperations::initFilter(MATRIX &filter) {
+	// stub
 }
