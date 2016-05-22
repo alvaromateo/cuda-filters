@@ -37,6 +37,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <exception>
 #include <cstdio>
 #include <utility>
+#include <sstream>
 
 
 #define DEFAULT_FILTER_SIZE 5
@@ -66,7 +67,7 @@ class CommandLineParser {
 		std::map<std::string, unsigned short> opts;
 
 		void initOptions();
-		std::string &getOptionKey(const char *const &argument, int *index);
+		std::string getOptionKey(const char *const &argument, int *index);
 		unsigned short getOptionValue(const char *const &argument, const std::string &key);
 		unsigned short transformTypeToInt(const std::string &type);
 		bool isValid(const std::string &key, int *index);

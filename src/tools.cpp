@@ -100,13 +100,13 @@ void CommandLineParser::initOptions() {
  *
  * return: the string containing the user command line option.
  */
-std::string &CommandLineParser::getOptionKey(const char *const &argument, int *index) {
-	std::string key();
+std::string CommandLineParser::getOptionKey(const char *const &argument, int *index) {
+	std::string key;
 	if (argument[0] == '-') {
 		if (argument[1] == '-') {
-			key = (argument + 2);
+			key = std::string(argument + 2);
 		} else {
-			key = (argument + 1);
+			key = std::string(argument + 1);
 		}
 	}
 	if (!isValid(key, index)) {
@@ -192,6 +192,13 @@ bool CommandLineParser::isValid(const std::string &key, int *index) {
 	return valid;
 }
 
+/*
+ * This method recieves a name of an image file and detects if it is a valid image
+ * by looking at its extension (.png, .jpg, etc). If it doesn't have an extension included
+ * in the supported images formats then it returns false.
+ *
+ * return: a boolean indicating if the name of the image has a valid format or not
+ */
 bool CommandLineParser::isImage(const char *const &argument) {
 	std::string image(argument);
 	std::string::size_type pos = image.find_last_of('.');
@@ -201,6 +208,9 @@ bool CommandLineParser::isImage(const char *const &argument) {
 	return false;
 }
 
+/*
+ * This method prints the usage of the program.
+ */
 void CommandLineParser::doHelp() {
 	std::ostringstream help;
 	help << "Usage: cudafilters.exe image.png [image2.png image3.png ...] options" << std::endl;
@@ -209,7 +219,8 @@ void CommandLineParser::doHelp() {
 	help << "	--type s 		where s is one of the following filter types:" << std::endl;
 	help << "						blur, sharpen" << std::endl;
 	help << "	--show|-s		if set the modified images are opened when the program finishes" << std::endl;
-	help << "Currently supported images formats: .png" << std::endl;
+	help << "Currently supported images formats: .png";
+	help.flush();
 	std::cout << help.str() << std::endl;
 	exit(1);
 }
