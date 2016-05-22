@@ -160,9 +160,9 @@ unsigned short CommandLineParser::transformTypeToInt(const std::string &type) {
 	unsigned short typeNum = 0;
 	// Add different filter types here and in the tools.h enum
 	if (!type.compare("blur")) {
-		typeNum = 0;
+		typeNum = FilterType::blur;
 	} else if (!type.compare("sharpen")) {
-		typeNum = 1;
+		typeNum = FilterType::sharpen;
 	} else {
 		doHelp(); // type not valid. Show usage and exit the program
 	}
