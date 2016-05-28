@@ -41,14 +41,15 @@ void CommandLineParserTest::doTest() {
 
 void CommandLineParserTest::printImages() {
 	std::cout << "Images: " << std::endl;
-	for (std::string img : clp->loadImages()) {
-		std::cout << img << std::endl;
+	std::vector<std::string>::const_iterator it = clp->loadImages().begin();
+	for ( ; it != clp->loadImages().end(); ++it) {
+		std::cout << *it << std::endl;
 	}
 }
 
 void CommandLineParserTest::printOptions() {
 	std::cout << "Options: " << std::endl;
-	auto it = clp->opts.begin();
+	std::map<std::string, unsigned short>::const_iterator it = clp->opts.begin();
 	while (it != clp->opts.end()) {
 		std::cout << it->first << ": " << it->second << std::endl;
 		++it;

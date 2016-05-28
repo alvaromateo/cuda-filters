@@ -5,23 +5,27 @@ NVCC_FLAGS  = -O3 -I$(CUDA_HOME)/include -arch=compute_35 --ptxas-options=-v -I$
 LD_FLAGS    = -lcudart -Xlinker -rpath,$(CUDA_HOME)/lib64 -I$(CUDA_HOME)/sdk/CUDALibraries/common/lib
 PROG_FLAGS  = -DSIZE=32
 
+VPATH = src/
+BUILDDIR = ./build/
+
 
 EXEFILTERS  = filters.exe
+OBJFILTERS  = mainFilters.o tools.o test.o
+OBJINCLUDES = $(addprefix $(BUILDDIR),$(OBJFILTERS))
 
-OBJFILTERS  = filters.o
 
 default: $(EXEFILTERS)
 
-filters.o: filters.cu
-	$(NVCC) -c -o $@ filters.cu $(NVCC_FLAGS) $(PROG_FLAGS)
+$(BUILDDIR)%.o: %.cpp
+	$(NVCC) $(NVCC_FLAGS) $(PROG_FLAGS) -c -o $@ $<
 
 
-$(EXEFILTERS): $(OBJFILTERS)
-	$(NVCC) $(OBJFILTERS) -o $(EXEFILTERS) $(LD_FLAGS)
+$(EXEFILTERS): $(OBJINCLUDES)
+	$(NVCC) $^ -o $(EXEFILTERS) $(LD_FLAGS)
 
 
 all:	$(EXEFILTERS) 
 
 clean:
-	rm -rf *.o *.exe
+	rm -rf build/*.o *.exe
 

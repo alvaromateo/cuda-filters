@@ -29,6 +29,30 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 // includes
 #include "tools.h"
 
+#include <stdexcept>
+#include <cstdlib>
+#include <climits>
+#include <cerrno>
+
+
+/** 
+ * Personal strtoul function, as the std::stoul is only supported from C++11 and nvcc
+ * is using C++98. Converts an string to a number.
+ */
+unsigned short my_stoul (const char *str, size_t *idx = 0, int base = 10) {
+    char *endp;
+    unsigned short value = strtoul(str, &endp, base);
+    if (endp == str) {
+        throw std::invalid_argument("my_stoul");
+    }
+    if (value == ULONG_MAX && errno == ERANGE) {
+        throw std::out_of_range("my_stoul");
+    }
+    if (idx) {
+        *idx = endp - str;
+    }
+    return value;
+}
 
 /**
  * CommandLineParser public methods
@@ -62,7 +86,7 @@ CommandLineParser::CommandLineParser(int &argc, char **&argv) {
 	while (i < argc) {
 		std::string key = getOptionKey(argv[i], &i);
 		if (i < argc) {
-			auto it = opts.find(key);
+			std::map<std::string, unsigned short>::iterator it = opts.find(key);
 			it->second = getOptionValue(argv[i], key);
 		} else {
 			doHelp();
@@ -134,7 +158,7 @@ unsigned short CommandLineParser::getOptionValue(const char *const &argument, co
 	} else if (key == "size") {
 		// the size can only be odd values bigger than 3
 		try {
-			value = std::stoul(std::string(argument));
+			value = my_stoul(argument);
 		} catch (std::exception &e) {
 			doHelp();
 		}
@@ -165,9 +189,9 @@ unsigned short CommandLineParser::transformTypeToInt(const std::string &type) {
 	unsigned short typeNum = 0;
 	// Add different filter types here and in the tools.h enum
 	if (!type.compare("blur")) {
-		typeNum = FilterType::blur;
+		typeNum = blur;
 	} else if (!type.compare("sharpen")) {
-		typeNum = FilterType::sharpen;
+		typeNum = sharpen;
 	} else {
 		doHelp(); // type not valid. Show usage and exit the program
 	}
@@ -232,7 +256,7 @@ void CommandLineParser::doHelp() {
 	help << "Currently supported images formats: .png";
 	help.flush();
 	std::cout << help.str() << std::endl;
-	exit(1);
+	std::exit(1);
 }
 
 
