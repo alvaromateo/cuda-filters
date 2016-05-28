@@ -31,23 +31,18 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "test.h"
 
 
+// Change DEBUG to 0 to disable debugging
+#define DEBUG 1
+
+
 int main(int argc, char **argv) {
 	CommandLineParser clp(argc, argv); // read commandline options (tools.h)
 
-	// test command line
-	CommandLineParserTest clpTest;
-	clpTest.printImages(clp);
-	/*
-	std::cout << "Images: " << std::endl;
-	for (string img : clp.loadImages()) {
-		std::cout << img << std::endl;
-	}
-	std::cout << "Map: " << std::endl;
-	auto testMap = clpTest.getMap();
-	for (auto it = testMap.cbegin(); it != testMap.cend(); ++it) {
-		std::cout << it->first << " - " << it->second << std::endl;
-	}
-*/
+#if DEBUG
+	CommandLineParserTest clpTest(&clp);
+	clpTest.doTest();
+#endif
+	
 	// initialize filter
 	unsigned int filterSize = clp.getFilterSize();
 	MATRIX filter(filterSize, VECTOR(filterSize)); // The filter to apply

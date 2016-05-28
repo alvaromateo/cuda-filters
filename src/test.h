@@ -32,15 +32,24 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 // includes
 #include "tools.h"
 
+/*
+ * Classes for testing.
+ */
+
 class Test {
 	public:
-		virtual void doTest() {}
+		virtual void doTest() = 0;
 };
 
 class CommandLineParserTest : public Test {
+	private:
+		const CommandLineParser *clp;
+		void printImages();
+		void printOptions();
+
 	public:
+		CommandLineParserTest(const CommandLineParser *clp);
 		virtual void doTest();
-		static void printImages(CommandLineParser &clp);
 };
 
 #endif

@@ -28,13 +28,29 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "test.h"
 
-void CommandLineParserTest::doTest() {
+/**
+ * CommandLineParserTest methods
+ */
 
+CommandLineParserTest::CommandLineParserTest(const CommandLineParser *parser) : clp(parser) {}
+
+void CommandLineParserTest::doTest() {
+	printImages();
+	printOptions();
 }
 
-void CommandLineParserTest::printImages(CommandLineParser &clp) {
+void CommandLineParserTest::printImages() {
 	std::cout << "Images: " << std::endl;
-	for (std::string img : clp.loadImages()) {
+	for (std::string img : clp->loadImages()) {
 		std::cout << img << std::endl;
+	}
+}
+
+void CommandLineParserTest::printOptions() {
+	std::cout << "Options: " << std::endl;
+	auto it = clp->opts.begin();
+	while (it != clp->opts.end()) {
+		std::cout << it->first << ": " << it->second << std::endl;
+		++it;
 	}
 }

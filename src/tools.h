@@ -55,11 +55,11 @@ enum FilterType {
  * Parser for the command line options
  */
 class CommandLineParser {
-	friend class Test;
+	friend class CommandLineParserTest;
 
 	public:
 		CommandLineParser(int &argc, char **&argv);
-		std::vector<std::string> &loadImages() { return images; }
+		inline const std::vector<std::string> &loadImages() const { return images; }
 		unsigned short getFilterSize();
 
 	private:
@@ -70,7 +70,7 @@ class CommandLineParser {
 		std::string getOptionKey(const char *const &argument, int *index);
 		unsigned short getOptionValue(const char *const &argument, const std::string &key);
 		unsigned short transformTypeToInt(const std::string &type);
-		bool isValid(const std::string &key, int *index);
+		bool isValid(std::string &key, int *index);
 		bool isImage(const char *const &argument);
 		void doHelp();
 };

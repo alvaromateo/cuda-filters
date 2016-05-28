@@ -47,6 +47,9 @@ CommandLineParser::CommandLineParser(int &argc, char **&argv) {
 			images.push_back(std::string(argv[i]));
 		} else {
 			allImagesFound = true; // exit the loop
+			// we substract one because right now i points to the next element to process
+			// and after the else we add 1 to it.
+			--i;
 		}
 		++i;
 	}
@@ -56,11 +59,13 @@ CommandLineParser::CommandLineParser(int &argc, char **&argv) {
 	}
 	// init map with default values
 	initOptions();
-	
 	while (i < argc) {
 		std::string key = getOptionKey(argv[i], &i);
 		if (i < argc) {
-			opts.insert(std::pair<std::string, unsigned short> (key, getOptionValue(argv[i], key)));
+			auto it = opts.find(key);
+			it->second = getOptionValue(argv[i], key);
+		} else {
+			doHelp();
 		}
 		++i;
 	}
@@ -135,7 +140,7 @@ unsigned short CommandLineParser::getOptionValue(const char *const &argument, co
 		}
 		// if the number is not odd we substract 1
 		if (value > 2) {
-			if ((value % 2) != 0) {
+			if (!(value % 2)) {
 				--value;
 			}
 		} else {
@@ -177,16 +182,21 @@ unsigned short CommandLineParser::transformTypeToInt(const std::string &type) {
  *
  * return: a boolean indicating if the option read is valid or not.
  */
-bool CommandLineParser::isValid(const std::string &key, int *index) {
+bool CommandLineParser::isValid(std::string &key, int *index) {
 	bool valid = false;
 	if (!key.empty()) {
 		if (key == "size" || key == "type") {
 			valid = true;
 			++(*index); // increment index to check for the value
-		} else if (key == "show" || key == "s") {
+		} else if (key == "show") {
 			// just set the option as valid and don't increment index
 			// because this option doesn't have any value
 			valid = true; 
+		} else if (key == "s") {
+			// set valid to true and change key to show to avoid saving "show" and
+			// "s" options, which are the same
+			key = "show";
+			valid = true;
 		}
 	}
 	return valid;
