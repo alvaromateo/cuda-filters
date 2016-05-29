@@ -29,7 +29,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 // Includes
 #include "tools.h"
 #include "test.h"
-
+#include "kernel.h"
 
 // Change DEBUG to 0 to disable debugging
 #define DEBUG 1
@@ -45,7 +45,7 @@ int main(int argc, char **argv) {
 	
 	// initialize filter
 	unsigned int filterSize = clp.getFilterSize();
-	MATRIX filter(filterSize, VECTOR(filterSize)); // The filter to apply
+	float *filter = new float[filterSize][filterSize]; // The filter to apply
 	MatrixOperations::initFilter(filter);
 
 	// load images

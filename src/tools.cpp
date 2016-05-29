@@ -55,6 +55,14 @@ unsigned short my_stoul (const char *str, size_t *idx = 0, int base = 10) {
 }
 
 /**
+ * Function to check if a number is a power of 2 or not.
+ */
+inline bool is_power_of_2(const unsigned short &n) {
+	return (n & (n - 1)) == 0;
+}
+
+
+/**
  * CommandLineParser public methods
  */
 
@@ -121,6 +129,10 @@ void CommandLineParser::initOptions() {
 	opts.insert(std::pair<std::string, unsigned short> (std::string("size"), DEFAULT_FILTER_SIZE));
 	opts.insert(std::pair<std::string, unsigned short> (std::string("type"), DEFAULT_FILTER_TYPE));
 	opts.insert(std::pair<std::string, unsigned short> (std::string("show"), 0));
+	opts.insert(std::pair<std::string, unsigned short> (std::string("threads"), THREADS));
+	opts.insert(std::pair<std::string, unsigned short> (std::string("exec"), sequential));
+	opts.insert(std::pair<std::string, unsigned short> (std::string("pinned"), 0));
+	opts.insert(std::pair<std::string, unsigned short> (std::string("color"), rgb));
 }
 
 /**
@@ -153,26 +165,30 @@ std::string CommandLineParser::getOptionKey(const char *const &argument, int *in
  */
 unsigned short CommandLineParser::getOptionValue(const char *const &argument, const std::string &key) {
 	unsigned short value = 0;
-	if (key == "show" || key == "s") {
+	if (key == "show" || key == "pinned") {
 		value = 1;
-	} else if (key == "size") {
+	} else if (key == "size" || key == "threads") {
 		// the size can only be odd values bigger than 3
 		try {
 			value = my_stoul(argument);
 		} catch (std::exception &e) {
 			doHelp();
 		}
-		// if the number is not odd we substract 1
-		if (value > 2) {
+		// if the number is not odd we substract 1 if we are getting the size
+		if (key == "size" && value > 2) {
 			if (!(value % 2)) {
 				--value;
 			}
+		} else if (key == "threads" && value < !is_power_of_2(value)) {
+			doHelp();
 		} else {
 			doHelp();
 		}
-	} else if (key == "type") {
+	} else if (key == "type" || key == "color" || key == "exec") {
 		// transform the string into a number with transformTypeToInt
 		value = transformTypeToInt(std::string(argument));
+	} else if () {
+		// 
 	} else {
 		doHelp();
 	}
@@ -192,6 +208,20 @@ unsigned short CommandLineParser::transformTypeToInt(const std::string &type) {
 		typeNum = blur;
 	} else if (!type.compare("sharpen")) {
 		typeNum = sharpen;
+	} else if (!type.compare("rgb")) {
+		typeNum = rgb;
+	} else if (!type.compare("grayscale")) {
+		typeNum = grayscale;
+	} else if (!type.compare("sequential")) {
+		typeNum = sequential;
+	} else if (!type.compare("singleCardSyn")) {
+		typeNum = singleCardSyn;
+	} else if (!type.compare("singleCardAsyn")) {
+		typeNum = singleCardAsyn;
+	} else if (!type.compare("multiCardSyn")) {
+		typeNum = multiCardSyn;
+	} else if (!type.compare("multiCardAsyn")) {
+		typeNum = multiCardAsyn;
 	} else {
 		doHelp(); // type not valid. Show usage and exit the program
 	}
@@ -209,7 +239,7 @@ unsigned short CommandLineParser::transformTypeToInt(const std::string &type) {
 bool CommandLineParser::isValid(std::string &key, int *index) {
 	bool valid = false;
 	if (!key.empty()) {
-		if (key == "size" || key == "type") {
+		if (key == "size" || key == "type" || key == "threads" || key == "exec" || key == "color") {
 			valid = true;
 			++(*index); // increment index to check for the value
 		} else if (key == "show") {
@@ -220,6 +250,11 @@ bool CommandLineParser::isValid(std::string &key, int *index) {
 			// set valid to true and change key to show to avoid saving "show" and
 			// "s" options, which are the same
 			key = "show";
+			valid = true;
+		} else if (key == "pinned") {
+			valid = true;
+		} else if (key == "p") {
+			key = "pinned";
 			valid = true;
 		}
 	}
@@ -252,7 +287,13 @@ void CommandLineParser::doHelp() {
 	help << "	--size x		where x is an odd number bigger than 2" << std::endl;
 	help << "	--type s 		where s is one of the following filter types:" << std::endl;
 	help << "						blur, sharpen" << std::endl;
-	help << "	--show|-s		if set the modified images are opened when the program finishes" << std::endl;
+	help << "	--show|-s		if set, the modified images are opened when the program finishes" << std::endl;
+	help << "	--pinned|-p 	if set, the program will use pinned memory" << std::endl;
+	help << "	--exec e 		where e is one of the following execution types:" << std::endl;
+	help << "						sequential, singleCardSyn, singleCardAsyn, multiCardSyn, multiCardAsyn" << std::endl;
+	help << "	--color c 		where c is one of the following color types for the image:" << std::endl;
+	help << "						rgb, grayscale" << std::endl;
+	help << "	--threads t 	where t is an integer number power of 2 and not greater than " << MAX_THREAD_NUMBER << std::endl;
 	help << "Currently supported images formats: .png";
 	help.flush();
 	std::cout << help.str() << std::endl;
@@ -265,6 +306,6 @@ void CommandLineParser::doHelp() {
  */
 
 
-void MatrixOperations::initFilter(MATRIX &filter) {
+void MatrixOperations::initFilter(float *filter) {
 	// stub
 }

@@ -42,14 +42,27 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #define DEFAULT_FILTER_SIZE 5
 #define DEFAULT_FILTER_TYPE 0
+#define THREADS 32
+#define MAX_THREAD_NUMBER 1024
 
-typedef std::vector<float> VECTOR;
-typedef std::vector< VECTOR > MATRIX;
 
 enum FilterType {
 	blur,
 	sharpen
 };
+
+enum ExecutionType {
+	sequential,
+	singleCardSyn,
+	singleCardAsyn,
+	multiCardSyn,
+	multiCardAsyn
+};
+
+enum Color {
+	rgb,
+	grayscale
+}
 
 /**
  * Parser for the command line options
@@ -80,7 +93,7 @@ class CommandLineParser {
  */
 class MatrixOperations {
 	public:
-		static void initFilter(MATRIX &filter);
+		static void initFilter(float *filter);
 };
 
 #endif
