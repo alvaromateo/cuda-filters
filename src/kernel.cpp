@@ -109,19 +109,56 @@ void Kernel::singleCardSynExec(const Filter &filter, Image &image) {
 
 	unsigned int numBytes = image.getSizeX * image.getSizeY * sizeof(uchar);
 
-	dim3 dimGrid(nBlocks, nBlocks, 1);
+	dim3 dimGrid(nBlocksX, nBlocksY, 1);
 	dim3 dimBlock(nThreads, nThreads, 1);
 
-	cudaEventCreate(&E0);
-	cudaEventCreate(&E1);
-	cudaEventCreate(&E2);
-	cudaEventCreate(&E3);
+	createEvents(&E0, &E1, &E2, &E3);
 
 	if (pinned) {
 		getPinnedMemory();
 	} else {
 		getMemory();
 	}
+
+	cudaEventRecord(E0, 0);
+	cudaEventSynchronize(E0);
+
+	// Obtener Memoria en el device
+	cudaMalloc((float**)&d_A, numBytes); 
+	cudaMalloc((float**)&d_B, numBytes); 
+	cudaMalloc((float**)&d_C, numBytes); 
+
+	// Copiar datos desde el host en el device 
+	cudaMemcpy(d_A, h_A, numBytes, cudaMemcpyHostToDevice);
+	cudaMemcpy(d_B, h_B, numBytes, cudaMemcpyHostToDevice);
+
+	cudaEventRecord(E1, 0);
+	cudaEventSynchronize(E1);
+
+	// Ejecutar el kernel 
+	Kernel1<<<dimGrid, dimBlock>>>();
+
+	cudaEventRecord(E2, 0);
+	cudaEventSynchronize(E2);
+
+	// Obtener el resultado desde el host 
+	cudaMemcpy(h_C, d_C, numBytes, cudaMemcpyDeviceToHost); 
+
+	// Liberar Memoria del device 
+	cudaFree(d_A);
+	cudaFree(d_B);
+	cudaFree(d_C);
+
+	cudaEventRecord(E3, 0);
+	cudaEventSynchronize(E3);
+
+	cudaEventElapsedTime(&TiempoTotal,  E0, E3);
+	cudaEventElapsedTime(&TiempoKernel, E1, E2);
+	
+	cudaEventDestroy(E0);
+	cudaEventDestroy(E1);
+	cudaEventDestroy(E2);
+	cudaEventDestroy(E3);
 }
 
 void Kernel::singleCardAsynExec(const Filter &filter, Image &image) {
@@ -136,3 +173,9 @@ void Kernel::multiCardAsynExec(const Filter &filter, Image &image) {
 
 }
 
+void Kernel::createEvents(cudaEvent_t &E0, cudaEvent_t &E1, cudaEvent_t &E2, cudaEvent_t &E3) {
+	cudaEventCreate(&E0);
+	cudaEventCreate(&E1);
+	cudaEventCreate(&E2);
+	cudaEventCreate(&E3);
+}
