@@ -26,37 +26,46 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 */
 
+
+#ifndef KERNEL
+#define KERNEL
+
 // Includes
-#include <opencv2/opencv.hpp>
 #include "tools.h"
-#include "test.h"
-#include "kernel.h"
+#include "image.h"
 
 
-// Change DEBUG to 0 to disable debugging
-#define DEBUG 1
+class Kernel {
+	private:
+		// private execution type variables
+		ExecutionType executionType;
+		Color color;
+		unsigned short nThreads;
+		bool pinned;
+
+		// private kernel methods
+		void sequentialExec(const Filter &filter, Image &image);
+		void singleCardSynExec(const Filter &filter, Image &image);
+		void singleCardAsynExec(const Filter &filter, Image &image);
+		void multiCardSynExec(const Filter &filter, Image &image);
+		void multiCardAsynExec(const Filter &filter, Image &image);
+		// private methods for allocating memory
+		void getPinnedMemory();
+		void getMemory();
+		// private methods to free memory
+		void freePinnedMemory();
+		void freeMemory();
+
+	public:
+		Kernel() : executionType(sequential), color(rgb), nThreads(THREADS), pinned(false) {}
+		Kernel(const CommandLineParser &clp);
+		static void applyFilter(const Filter &filter, Image &image);
+};
+
+/**
+ * Definition of the kernels goes here so that they are global.
+ */
 
 
-int main(int argc, char **argv) {
-	CommandLineParser clp(argc, argv); // read commandline options (tools.h)
 
-#if DEBUG
-	CommandLineParserTest clpTest(&clp);
-	clpTest.doTest();
 #endif
-	
-	// initialize filter
-	const unsigned int filterSize = clp.getFilterSize();
-	//float **filter = (float**)std::malloc(filterSize * sizeof(float)); // The filter to apply
-	//MatrixOperations::initFilter(filter);
-
-	// load images
-	// Images images(clp.loadImages());
-
-	/*
-	for (auto image : images.getImages()) {
-		// call kernel
-		// show image
-	}
-	*/
-}

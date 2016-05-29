@@ -26,37 +26,23 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 */
 
+
+#ifndef IMAGE
+#define IMAGE
+
 // Includes
-#include <opencv2/opencv.hpp>
 #include "tools.h"
-#include "test.h"
-#include "kernel.h"
 
 
-// Change DEBUG to 0 to disable debugging
-#define DEBUG 1
+class Filter {
+	private:
+		//
+	public:
+		//
+};
 
-
-int main(int argc, char **argv) {
-	CommandLineParser clp(argc, argv); // read commandline options (tools.h)
-
-#if DEBUG
-	CommandLineParserTest clpTest(&clp);
-	clpTest.doTest();
-#endif
+class Image {
 	
-	// initialize filter
-	const unsigned int filterSize = clp.getFilterSize();
-	//float **filter = (float**)std::malloc(filterSize * sizeof(float)); // The filter to apply
-	//MatrixOperations::initFilter(filter);
+};
 
-	// load images
-	// Images images(clp.loadImages());
-
-	/*
-	for (auto image : images.getImages()) {
-		// call kernel
-		// show image
-	}
-	*/
-}
+#endif

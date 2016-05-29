@@ -30,7 +30,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "tools.h"
 
 #include <stdexcept>
-#include <cstdlib>
 #include <climits>
 #include <cerrno>
 
@@ -127,7 +126,7 @@ unsigned short CommandLineParser::getFilterSize() {
  */
 void CommandLineParser::initOptions() {
 	opts.insert(std::pair<std::string, unsigned short> (std::string("size"), DEFAULT_FILTER_SIZE));
-	opts.insert(std::pair<std::string, unsigned short> (std::string("type"), DEFAULT_FILTER_TYPE));
+	opts.insert(std::pair<std::string, unsigned short> (std::string("filter"), DEFAULT_FILTER_TYPE));
 	opts.insert(std::pair<std::string, unsigned short> (std::string("show"), 0));
 	opts.insert(std::pair<std::string, unsigned short> (std::string("threads"), THREADS));
 	opts.insert(std::pair<std::string, unsigned short> (std::string("exec"), sequential));
@@ -179,16 +178,14 @@ unsigned short CommandLineParser::getOptionValue(const char *const &argument, co
 			if (!(value % 2)) {
 				--value;
 			}
-		} else if (key == "threads" && value < !is_power_of_2(value)) {
+		} else if (key == "threads" && (value > MAX_THREAD_NUMBER) && !is_power_of_2(value)) {
 			doHelp();
 		} else {
 			doHelp();
 		}
-	} else if (key == "type" || key == "color" || key == "exec") {
+	} else if (key == "filter" || key == "color" || key == "exec") {
 		// transform the string into a number with transformTypeToInt
 		value = transformTypeToInt(std::string(argument));
-	} else if () {
-		// 
 	} else {
 		doHelp();
 	}
@@ -239,7 +236,7 @@ unsigned short CommandLineParser::transformTypeToInt(const std::string &type) {
 bool CommandLineParser::isValid(std::string &key, int *index) {
 	bool valid = false;
 	if (!key.empty()) {
-		if (key == "size" || key == "type" || key == "threads" || key == "exec" || key == "color") {
+		if (key == "size" || key == "filter" || key == "threads" || key == "exec" || key == "color") {
 			valid = true;
 			++(*index); // increment index to check for the value
 		} else if (key == "show") {
@@ -284,16 +281,18 @@ void CommandLineParser::doHelp() {
 	std::ostringstream help;
 	help << "Usage: cudafilters.exe image.png [image2.png image3.png ...] options" << std::endl;
 	help << "Options can be:" << std::endl;
-	help << "	--size x		where x is an odd number bigger than 2" << std::endl;
-	help << "	--type s 		where s is one of the following filter types:" << std::endl;
-	help << "						blur, sharpen" << std::endl;
-	help << "	--show|-s		if set, the modified images are opened when the program finishes" << std::endl;
+	help << "	--size x	where x is an odd number bigger than 2" << std::endl;
+	help << "	--filter f 	where f is one of the following filter types:" << std::endl;
+	help << "					blur, sharpen" << std::endl;
+	help << "	--show|-s	if set, the modified images are opened when the program finishes" << std::endl;
 	help << "	--pinned|-p 	if set, the program will use pinned memory" << std::endl;
-	help << "	--exec e 		where e is one of the following execution types:" << std::endl;
-	help << "						sequential, singleCardSyn, singleCardAsyn, multiCardSyn, multiCardAsyn" << std::endl;
-	help << "	--color c 		where c is one of the following color types for the image:" << std::endl;
-	help << "						rgb, grayscale" << std::endl;
-	help << "	--threads t 	where t is an integer number power of 2 and not greater than " << MAX_THREAD_NUMBER << std::endl;
+	help << "	--exec e 	where e is one of the following execution types:" << std::endl;
+	help << "					sequential, singleCardSyn, singleCardAsyn, multiCardSyn, multiCardAsyn" << std::endl;
+	help << "	--color c 	where c is one of the following color types for the image:" << std::endl;
+	help << "					rgb, grayscale" << std::endl;
+	help << "	--threads t where t is an integer number power of 2 and not greater than " << MAX_THREAD_NUMBER <<
+		<< " specifying the number of threads in each dimension" << std::endl;
+	help << "Pinned memory is mandatory in case of asyncronous execution" << std::endl;
 	help << "Currently supported images formats: .png";
 	help.flush();
 	std::cout << help.str() << std::endl;

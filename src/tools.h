@@ -38,6 +38,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <cstdio>
 #include <utility>
 #include <sstream>
+#include <cstdlib>
 
 
 #define DEFAULT_FILTER_SIZE 5
@@ -62,7 +63,7 @@ enum ExecutionType {
 enum Color {
 	rgb,
 	grayscale
-}
+};
 
 /**
  * Parser for the command line options
@@ -72,7 +73,8 @@ class CommandLineParser {
 
 	public:
 		CommandLineParser(int &argc, char **&argv);
-		inline const std::vector<std::string> &loadImages() const { return images; }
+		inline const std::vector<std::string> &getImages() const { return images; }
+		inline const std::map<std::string, unsigned short> &getOptions() const { return opts; }
 		unsigned short getFilterSize();
 
 	private:
