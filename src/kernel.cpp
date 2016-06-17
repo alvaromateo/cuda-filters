@@ -31,6 +31,15 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "kernel.h"
 
 
+/**
+ * Kernel public methods
+ */
+
+
+/*
+ * Constructor that takes a CommandLineParser object and uses it to initialize
+ * all the values needed for the kernel to be launched.
+ */
 Kernel::Kernel(const CommandLineParser &clp) {
 	std::map<std::string, unsigned short> opts = clp.getOptions();
 	std::map<std::string, unsigned short>::const_iterator it = opts.find("exec");
@@ -75,6 +84,12 @@ void Kernel::applyFilter(const Filter &filter, Image &image) {
 	}
 }
 
+
+/**
+ * Kernel private methods
+ */
+
+
 void Kernel::sequentialExec(const Filter &filter, Image &image) {
 	// Apply the filter
 	for(int x = 0; x < w; x++) {
@@ -103,7 +118,7 @@ void Kernel::singleCardSynExec(const Filter &filter, Image &image) {
 	float TiempoTotal, TiempoKernel;
 	cudaEvent_t E0, E1, E2, E3;
 
-	// numero de Blocks en cada dimension 
+	// Number of blocks in each dimension 
 	unsigned int nBlocksX = image.getSizeX / nThreads; 
 	unsigned int nBlocksY = image.getSizeY / nThreads;
 
@@ -120,45 +135,47 @@ void Kernel::singleCardSynExec(const Filter &filter, Image &image) {
 		getMemory();
 	}
 
-	cudaEventRecord(E0, 0);
-	cudaEventSynchronize(E0);
+	recordEvent(E0);
 
-	// Obtener Memoria en el device
+	// Get memory in device
 	cudaMalloc((float**)&d_A, numBytes); 
 	cudaMalloc((float**)&d_B, numBytes); 
 	cudaMalloc((float**)&d_C, numBytes); 
 
-	// Copiar datos desde el host en el device 
+	// Copy data from host to device 
 	cudaMemcpy(d_A, h_A, numBytes, cudaMemcpyHostToDevice);
 	cudaMemcpy(d_B, h_B, numBytes, cudaMemcpyHostToDevice);
 
-	cudaEventRecord(E1, 0);
-	cudaEventSynchronize(E1);
+	recordEvent(E1);
 
-	// Ejecutar el kernel 
+	// Execute the kernel
 	Kernel1<<<dimGrid, dimBlock>>>();
 
-	cudaEventRecord(E2, 0);
-	cudaEventSynchronize(E2);
+	recordEvent(E2);
 
-	// Obtener el resultado desde el host 
+	// Get the result to the host 
 	cudaMemcpy(h_C, d_C, numBytes, cudaMemcpyDeviceToHost); 
 
-	// Liberar Memoria del device 
+	// Free memory of the device 
 	cudaFree(d_A);
 	cudaFree(d_B);
 	cudaFree(d_C);
 
-	cudaEventRecord(E3, 0);
-	cudaEventSynchronize(E3);
+	recordEvent(E3);
 
 	cudaEventElapsedTime(&TiempoTotal,  E0, E3);
 	cudaEventElapsedTime(&TiempoKernel, E1, E2);
+
+	// Print results. TODO
+
+	if (pinned) {
+		freePinnedMemory();
+	} else {
+		freeMemory();
+	}
+
+	destroyEvents(&E0, &E1, &E2, &E3);
 	
-	cudaEventDestroy(E0);
-	cudaEventDestroy(E1);
-	cudaEventDestroy(E2);
-	cudaEventDestroy(E3);
 }
 
 void Kernel::singleCardAsynExec(const Filter &filter, Image &image) {
@@ -178,4 +195,16 @@ void Kernel::createEvents(cudaEvent_t &E0, cudaEvent_t &E1, cudaEvent_t &E2, cud
 	cudaEventCreate(&E1);
 	cudaEventCreate(&E2);
 	cudaEventCreate(&E3);
+}
+
+void Kernel::destroyEvents(cudaEvent_t &E0, cudaEvent_t &E1, cudaEvent_t &E2, cudaEvent_t &E3) {
+	cudaEventDestroy(E0);
+	cudaEventDestroy(E1);
+	cudaEventDestroy(E2);
+	cudaEventDestroy(E3);	
+}
+
+void Kernel::recordEvent(cudaEvent_t &E) {
+	cudaEventRecord(E, 0);
+	cudaEventSynchronize(E);
 }

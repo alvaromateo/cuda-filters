@@ -35,6 +35,11 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "image.h"
 
 
+/*
+ * Class to contain all the variables needed to run the kernel.
+ * Call to applyFilter will use the kernel according to the options provided
+ * by the command-line.
+ */
 class Kernel {
 	private:
 		// private execution type variables
@@ -61,11 +66,6 @@ class Kernel {
 		Kernel(const CommandLineParser &clp);
 		static void applyFilter(const Filter &filter, Image &image);
 };
-
-/**
- * Definition of the kernels goes here so that they are global.
- */
-
 
 
 #endif
