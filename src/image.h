@@ -34,14 +34,25 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "tools.h"
 
 
-class Filter {
+typedef std::vector< std::vector<uchar> > matrix;
+
+
+class Matrix {
 	private:
-		//
+		matrix v;
+		
 	public:
-		//
+		Matrix() {}
+		Matrix(
+}
+
+class Filter : public Matrix {
+	private:
+	public:
+		
 };
 
-class Image {
+class Image : public Matrix {
 	
 };
 

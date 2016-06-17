@@ -62,6 +62,11 @@ Kernel::Kernel(const CommandLineParser &clp) {
 	if (it != opts.end()) {
 		this.color = it->second;
 	}
+	it = opts.find("size");
+	// Initialize filter size
+	if (it != opts.end()) {
+		this.filterSize = it->second;
+	}
 }
 
 void Kernel::applyFilter(const Filter &filter, Image &image) {
@@ -90,30 +95,37 @@ void Kernel::applyFilter(const Filter &filter, Image &image) {
  */
 
 
-void Kernel::sequentialExec(const Filter &filter, Image &image) {
+/**
+ * Sequential execution to apply the filter to the image. The image is an address of a vector
+ * which is consecutively stored in memory (so it behaves as an array), an doesn't have rows
+ * or columns strictly speaking. "w"(width) and "h"(height) are the values of the image. The 
+ * filter has a fixed size.
+ */
+void Kernel::sequentialExec(const uchar *filter, const uchar *image, unsigned int w, 
+							unsigned int h, uchar *output) {
 	// Apply the filter
-	for(int x = 0; x < w; x++) {
-		for(int y = 0; y < h; y++) {
+	for(unsigned int x = 0; x < w; x++) {
+		for(unsigned int y = 0; y < h; y++) {
 			double red = 0.0, green = 0.0, blue = 0.0;
 			// Multiply every value of the filter with corresponding image pixel
-			for(int filterY = 0; filterY < filterHeight; filterY++) {
-				for(int filterX = 0; filterX < filterWidth; filterX++) {
-					int imageX = (x - filterWidth / 2 + filterX + w) % w;
-					int imageY = (y - filterHeight / 2 + filterY + h) % h;
+			for(int filterX = 0; filterX < filterSize; filterX++) {
+				for(int filterY = 0; filterY < filterSize; filterY++) {
+					int imageX = (x - filterSize / 2 + filterX + w) % w;
+					int imageY = (y - filterSize / 2 + filterY + h) % h;
 					red += image[imageY * w + imageX].r * filter[filterY][filterX];
 					green += image[imageY * w + imageX].g * filter[filterY][filterX];
 					blue += image[imageY * w + imageX].b * filter[filterY][filterX];
 				}
 			}
 			// Truncate values smaller than zero and larger than 255
-			result[y * w + x].r = min(max(int(factor * red + bias), 0), 255);
-			result[y * w + x].g = min(max(int(factor * green + bias), 0), 255);
-			result[y * w + x].b = min(max(int(factor * blue + bias), 0), 255);
+			output[y * w + x].r = min(max(int(factor * red + bias), 0), 255);
+			output[y * w + x].g = min(max(int(factor * green + bias), 0), 255);
+			output[y * w + x].b = min(max(int(factor * blue + bias), 0), 255);
 		}
 	}
 }
 
-void Kernel::singleCardSynExec(const Filter &filter, Image &image) {
+void Kernel::singleCardSynExec(const uchar *filter, uchar *image, unsigned int imageSize) {
 	// Variables to calculate time spent in each job
 	float TiempoTotal, TiempoKernel;
 	cudaEvent_t E0, E1, E2, E3;
@@ -178,15 +190,15 @@ void Kernel::singleCardSynExec(const Filter &filter, Image &image) {
 	
 }
 
-void Kernel::singleCardAsynExec(const Filter &filter, Image &image) {
+void Kernel::singleCardAsynExec(const uchar *filter, uchar *image, unsigned int imageSize) {
 
 }
 
-void Kernel::multiCardSynExec(const Filter &filter, Image &image) {
+void Kernel::multiCardSynExec(const uchar *filter, uchar *image, unsigned int imageSize) {
 
 }
 
-void Kernel::multiCardAsynExec(const Filter &filter, Image &image) {
+void Kernel::multiCardAsynExec(const uchar *filter, uchar *image, unsigned int imageSize) {
 
 }
 

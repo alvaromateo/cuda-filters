@@ -47,24 +47,29 @@ class Kernel {
 		Color color;
 		unsigned short nThreads;
 		bool pinned;
+		unsigned int filterSize;
 
 		// private kernel methods
-		void sequentialExec(const Filter &filter, Image &image);
-		void singleCardSynExec(const Filter &filter, Image &image);
-		void singleCardAsynExec(const Filter &filter, Image &image);
-		void multiCardSynExec(const Filter &filter, Image &image);
-		void multiCardAsynExec(const Filter &filter, Image &image);
+		void sequentialExec(const uchar *filter, uchar *image, unsigned int imageSize);
+		void singleCardSynExec(const uchar *filter, uchar *image, unsigned int imageSize);
+		void singleCardAsynExec(const uchar *filter, uchar *image, unsigned int imageSize);
+		void multiCardSynExec(const uchar *filter, uchar *image, unsigned int imageSize);
+		void multiCardAsynExec(const uchar *filter, uchar *image, unsigned int imageSize);
+		// new method with only one input-output matrix, overwriting it?
+		
 		// private methods for allocating memory
 		void getPinnedMemory();
 		void getMemory();
+		
 		// private methods to free memory
 		void freePinnedMemory();
 		void freeMemory();
 
 	public:
-		Kernel() : executionType(sequential), color(rgb), nThreads(THREADS), pinned(false) {}
+		Kernel() : executionType(sequential), color(rgb), nThreads(THREADS), 
+			pinned(false), filterSize(DEFAULT_FILTER_SIZE) {}
 		Kernel(const CommandLineParser &clp);
-		static void applyFilter(const Filter &filter, Image &image);
+		void applyFilter(const uchar *filter, uchar *image, unsigned int imageSize);
 };
 
 
