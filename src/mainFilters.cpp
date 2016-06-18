@@ -56,7 +56,7 @@ int main(int argc, char **argv) {
 	MatrixOperations::initFilter(filter);
 
 	// load images
-	string imageName("../images/blanc.png"); //Default filename
+	string imageName("../images/lena.png"); //Default filename
     if( argc > 1) {
         imageName = argv[1];
     }
@@ -78,6 +78,16 @@ int main(int argc, char **argv) {
 		blue[j]  = image[i+2];
 	}
 
+	//Filters
+	/////////////////////////////////////////////////////////////////////////////////////////////////FILTRES DE 5x5 COMPLICARAN S'ALGORITME
+	int avg3[9] = {1,1,1,1,1,1,1,1,1}; // *1/9
+	int avg5[25] = {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1};
+	int sharpenWeak[9] = {0,-1,0,-1,5,-1,0,-1,0};
+	int sharpenStrong[9] = {-1,-1,-1,-1,9,-1,-1,-1,-1};
+	int gaussian3[9] = {1,2,1,2,4,2,1,2,1}; // *1/16
+	int gaussian5[25] = {1,4,6,4,1,4,16,24,16,4,6,24,36,24,6,4,16,24,16,4,1,4,6,4,1}; // *1/256
+	int edgeDetection[9] = {0,1,0,1,-4,1,0,1,0}; //Normalize result by adding 128 to all elements
+	int embossing[9] = {-2,-1,0,-1,1,1,0,1,2};
 
 	// Images images(clp.loadImages());
 
