@@ -102,7 +102,7 @@ void Kernel::applyFilter(const Filter &filter, Image &image) {
  * filter has a fixed size.
  */
 void Kernel::sequentialExec(const uchar *filter, const uchar *image, unsigned int w, 
-							unsigned int h, uchar *output) {
+							unsigned int h, uchar *output, unsigned int filterSize) {
 	// Apply the filter
 	for(unsigned int x = 0; x < w; x++) {
 		for(unsigned int y = 0; y < h; y++) {

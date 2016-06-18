@@ -47,6 +47,10 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define MAX_THREAD_NUMBER 1024
 
 
+typedef unsigned short ushort;
+typedef unsigned char uchar;
+typedef unsigned int uint;
+
 enum FilterType {
 	blur,
 	sharpen

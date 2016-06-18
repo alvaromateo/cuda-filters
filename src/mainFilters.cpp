@@ -36,6 +36,12 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 // Change DEBUG to 0 to disable debugging
 #define DEBUG 1
 
+// Catch exceptions. Prints error and exit.
+void printAndExit(char *msg) {
+    std::cout << msg << std::endl;
+    exit(1);
+}
+
 
 int main(int argc, char **argv) {
 	CommandLineParser clp(argc, argv); // read commandline options (tools.h)
@@ -47,16 +53,5 @@ int main(int argc, char **argv) {
 	
 	// initialize filter
 	const unsigned int filterSize = clp.getFilterSize();
-	//float **filter = (float**)std::malloc(filterSize * sizeof(float)); // The filter to apply
-	//MatrixOperations::initFilter(filter);
-
-	// load images
-	// Images images(clp.loadImages());
-
-	/*
-	for (auto image : images.getImages()) {
-		// call kernel
-		// show image
-	}
-	*/
+	
 }

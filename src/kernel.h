@@ -44,10 +44,8 @@ class Kernel {
 	private:
 		// private execution type variables
 		ExecutionType executionType;
-		Color color;
 		unsigned short nThreads;
 		bool pinned;
-		unsigned int filterSize;
 
 		// private kernel methods
 		void sequentialExec(const uchar *filter, uchar *image, unsigned int imageSize);
@@ -66,10 +64,9 @@ class Kernel {
 		void freeMemory();
 
 	public:
-		Kernel() : executionType(sequential), color(rgb), nThreads(THREADS), 
-			pinned(false), filterSize(DEFAULT_FILTER_SIZE) {}
+		Kernel() : executionType(sequential), nThreads(THREADS), pinned(false) {}
 		Kernel(const CommandLineParser &clp);
-		void applyFilter(const uchar *filter, uchar *image, unsigned int imageSize);
+		void applyFilter(const uchar *filter, uchar *image);
 };
 
 

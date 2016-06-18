@@ -34,26 +34,47 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "tools.h"
 
 
-typedef std::vector< std::vector<uchar> > matrix;
-
-
+/*
+ * Class Matrix that stores a 2D array of uchars. It is used to create the
+ * filter and the different color frames of the images.
+ */
 class Matrix {
 	private:
-		matrix v;
-		
-	public:
-		Matrix() {}
-		Matrix(
-}
+		uchar *matrix;
+		uint width;
+		uint height;
 
-class Filter : public Matrix {
-	private:
 	public:
-		
+		Matrix() : matrix(nullptr), width(0), height(0) {}
+		Matrix(const uchar *matrix, uint w, uint h);
+		Matrix(const Matrix &matrix);
+		~Matrix();
+		// Matrix ops
+		uchar *getMatrix() const { return matrix; }
+		void setMatrix(const uchar *matrix);
+		// Filter ops
+		void initializeFilter(uchar filterType);
 };
 
-class Image : public Matrix {
-	
+
+/*
+ * Class that stores the RGB color frames of an image (or only one Matrix
+ * if the image is in greyscale). Used to store the image returned by the
+ * external library given the parameter of the file name.
+ */
+class Image {
+	private:
+		std::vector<Matrix> img;
+		bool greyscale;
+
+	public:
+		Image() : img() {}
+		Image(const std::string &imageName); // Throws exception std::invalid_argument
+		// Getters and setters
+		std::vector<Matrix> &getImg() { return img; }
+		void setImage(const std::string &imageName); // Throws exception std::invalid_argument
+		void saveImageToDisk();
+
 };
 
 #endif
