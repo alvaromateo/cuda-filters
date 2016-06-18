@@ -30,6 +30,11 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 // Includes
 #include "image.h"
 
+#define STB_IMAGE_IMPLEMENTATION
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include "stb_image.h"
+#include "stb_image_write.h"
+
 
 /**
  * Matrix public methods
@@ -96,7 +101,7 @@ void Matrix::copyMatrix(const uchar *matrix, uchar &mat) {
   * the file system.
   */
 Image::Image(const std::string &imageName) {
-	// New changes added
+    this.imageName = imageName;
     try {
     	this.img = loadImageFromdisk(imageName, this.width, this.height);
     } catch (const std::invalid_argument &e) {
@@ -109,6 +114,7 @@ Image::Image(const std::string &imageName) {
  * Set a new image for this object from a file named imageName.
  */
 void Image::setImage(const std::string &imageName) {
+    this.imageName = imageName;
 	try {
 		this.img = loadImageFromdisk(imageName, this.width, this.height);
 	} catch (const std::invalid_argument &e) {

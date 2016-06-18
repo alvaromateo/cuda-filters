@@ -29,9 +29,20 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 // Includes
 #include "kernel.h"
+#include <algorithm>
 
 
-/**
+/*
+ * Kernels
+ */
+
+__global__ void kernel1() {
+
+}
+
+
+
+/*
  * Kernel public methods
  */
 
@@ -118,9 +129,9 @@ void Kernel::sequentialExec(const uchar *filter, const uchar *image, unsigned in
 				}
 			}
 			// Truncate values smaller than zero and larger than 255
-			output[y * w + x].r = min(max(int(factor * red + bias), 0), 255);
-			output[y * w + x].g = min(max(int(factor * green + bias), 0), 255);
-			output[y * w + x].b = min(max(int(factor * blue + bias), 0), 255);
+			output[y * w + x].r = std::min(std::max(int(factor * red + bias), 0), 255);
+			output[y * w + x].g = std::min(std::max(int(factor * green + bias), 0), 255);
+			output[y * w + x].b = std::min(std::max(int(factor * blue + bias), 0), 255);
 		}
 	}
 }

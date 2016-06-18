@@ -299,12 +299,3 @@ void CommandLineParser::doHelp() {
 	std::exit(1);
 }
 
-
-/**
- * MatrixOperations public methods
- */
-
-
-void MatrixOperations::initFilter(float *filter) {
-	// stub
-}

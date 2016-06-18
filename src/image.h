@@ -66,6 +66,7 @@ class Image {
 	private:
 		std::vector<Matrix> img;
 		bool greyscale;
+		std::string imageName;
 
 	public:
 		Image() : img() {}

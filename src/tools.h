@@ -94,12 +94,4 @@ class CommandLineParser {
 		void doHelp();
 };
 
-/**
- * Common operations for matrixes
- */
-class MatrixOperations {
-	public:
-		static void initFilter(float *filter);
-};
-
 #endif
