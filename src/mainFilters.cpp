@@ -56,7 +56,7 @@ int main(int argc, char **argv) {
 	MatrixOperations::initFilter(filter);
 
 	// load images
-	string imageName("blanc.png"); //Default filename
+	string imageName("../images/blanc.png"); //Default filename
     if( argc > 1) {
         imageName = argv[1];
     }
