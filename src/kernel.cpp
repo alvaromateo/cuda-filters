@@ -91,11 +91,12 @@ Kernel::Kernel(const CommandLineParser &clp) {
 	if (it != opts.end()) {
 		this.nThreads = it->second;
 	}
-	it = opts.find("size");
-	// Initialize filter size
+	it = opts.find("filter");
+	// Initialize filter type
 	if (it != opts.end()) {
-		this.filterSize = it->second;
+		this.filterType = it->second;
 	}
+	
 	this.imageNames = clp.getImages();
 
 	/* For the moment not used
@@ -110,6 +111,7 @@ Kernel::Kernel(const CommandLineParser &clp) {
 void Kernel::applyFilter() {
 	images = loadImages();
 	filter = initFilter();
+
 	for (int i = 0; i < images.size(); ++i) {
 		switch (this.executionType) {
 			case sequential:
@@ -142,14 +144,21 @@ void Kernel::applyFilter() {
  * stored in a vector containing all the images inserted.
  */
 std::vector<Image> Kernel::loadImages() {
+	std::vector<Image> imgs(imageNames.size());
+	for (int i = 0; i < imageNames.size(); ++i) {
+		Image image(imageNames[i]);
+		imgs[i] = image;
 
+	}
+	return imgs;
 }
 
 /**
  * Method to initialize the filter and save it into a private variable.
  */
-Matrix Kernel::initFilter() {
-
+Filter Kernel::initFilter() {
+	Filter filter(filterType);
+	return filter;
 }
 
 /**
@@ -158,10 +167,14 @@ Matrix Kernel::initFilter() {
  * or columns strictly speaking. "w"(width) and "h"(height) are the values of the image. The 
  * filter has a fixed size.
  */
-void Kernel::sequentialExec(const uchar *filter, const uchar *image, unsigned int w, 
-							unsigned int h, uchar *output, unsigned int filterSize) {
+void Kernel::sequentialExec(const Filter &filter, Matrix &image) {
 	// Initialize the values
-
+	float *filter = filter.getFilter();
+	Matrix output(image);
+	uint w, h, filterSize;
+	w = image.getWidth();
+	h = image.getHeight();
+	filtersize = filter.getSize();
 	// Apply the filter
 	for(unsigned int x = 0; x < w; x++) {
 		for(unsigned int y = 0; y < h; y++) {
@@ -171,9 +184,9 @@ void Kernel::sequentialExec(const uchar *filter, const uchar *image, unsigned in
 				for(int filterX = 0; filterX < filterSize; filterX++) {
 					int imageX = (x - filterSize / 2 + filterX + w) % w;
 					int imageY = (y - filterSize / 2 + filterY + h) % h;
-					red += image.getImg()[0].getMatrix()[imageY * w + imageX] * filter[filterY * filterSize + filterX];
-					green += image.getImg()[1].getMatrix()[imageY * w + imageX] * filter[filterY * filterSize + filterX];
-					blue += image.getImg()[2].getMatrix()[imageY * w + imageX] * filter[filterY * filterSize + filterX];
+					red += image[0][imageY * w + imageX] * filter[filterY * filterSize + filterX];
+					green += image[1][imageY * w + imageX] * filter[filterY * filterSize + filterX];
+					blue += image[2][imageY * w + imageX] * filter[filterY * filterSize + filterX];
 				}
 			}
 			// Truncate values smaller than zero and larger than 255
@@ -182,6 +195,8 @@ void Kernel::sequentialExec(const uchar *filter, const uchar *image, unsigned in
 			output[y * w + x].b = std::min(std::max(int(factor * blue + bias), 0), 255);
 		}
 	}
+	// Copy the result
+	image.setMatrix(output.getMatrix());
 }
 
 void Kernel::singleCardSynExec(const uchar *filter, uchar *image, unsigned int imageSize) {

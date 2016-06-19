@@ -278,10 +278,9 @@ void CommandLineParser::doHelp() {
 	help << "	--pinned|-p 	if set, the program will use pinned memory" << std::endl;
 	help << "	--exec e 	where e is one of the following execution types:" << std::endl;
 	help << "					sequential, singleCardSyn, singleCardAsyn, multiCardSyn, multiCardAsyn" << std::endl;
-	help << "	--color c 	where c is one of the following color types for the image:" << std::endl;
-	help << "					rgb, grayscale" << std::endl;
+	// color option not working in this version
 	help << "	--threads t where t is an integer number power of 2 and not greater than " << MAX_THREAD_NUMBER <<
-		<< " specifying the number of threads in each dimension" << std::endl;
+		" specifying the number of threads in each dimension" << std::endl;
 	help << "Pinned memory is mandatory in case of asyncronous execution" << std::endl;
 	help << "Currently supported images formats: .png";
 	help.flush();

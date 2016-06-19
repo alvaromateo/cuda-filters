@@ -35,14 +35,14 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 // Change DEBUG to 0 to disable debugging
 #define DEBUG 1
 
-// Catch exceptions. Prints error and exit.
-void printAndExit(char *msg) {
-    std::cout << msg << std::endl;
-    exit(1);
+void myterminate () {
+	std::cerr << "An error occurred during execution. Exiting program...\n";
+	abort();  // forces abnormal termination
 }
 
 
 int main(int argc, char **argv) {
+	std::set_terminate (myterminate);
 	CommandLineParser clp(argc, argv); // read commandline options (tools.h)
 
 #if DEBUG

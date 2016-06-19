@@ -80,6 +80,14 @@ uchar &Matrix::operator[](int index) {
 }
 
 /*
+ * Method to copy another matrix. matrix has to have the same size of this.matrix.
+ */
+void Matrix::setMatrix(const uchar *matrix) {
+    copyMatrix(matrix, this.matrix);
+}
+
+
+/*
  * Matrix private methods
  */
 
@@ -105,11 +113,18 @@ void Matrix::copyMatrix(const uchar *matrix, uchar &mat) {
   */
 Image::Image(const std::string &imageName) {
     this.imageName = imageName;
-    try {
-    	this.img = loadImageFromdisk(imageName, this.width, this.height);
-    } catch (const std::invalid_argument &e) {
-    	// Re-throw exception
-    	throw e;
+	this.img = loadImageFromdisk(imageName, this.width, this.height);
+}
+
+/*
+ * Copy constructor
+ */
+Image::Image(const Image &otherImage) {
+    this.imageName = otherImage.imageName;
+    this.img = std::vector<Matrix> (3);
+    for (int i = 0; i < otherImage.img.size(); ++i) {
+        Matrix mat(otherImage.img[i]);
+        img[i] = mat;
     }
 }
 
@@ -137,12 +152,7 @@ Matrix &Image::operator[](uint index) {
  */
 void Image::setImage(const std::string &imageName) {
     this.imageName = imageName;
-	try {
-		this.img = loadImageFromdisk(imageName, this.width, this.height);
-	} catch (const std::invalid_argument &e) {
-		// Re-throw exception
-		throw e;
-	}
+	this.img = loadImageFromdisk(imageName, this.width, this.height);
 }
 
 /*
@@ -200,35 +210,35 @@ void Image::saveImageToDisk() {
 Filter::Filter(uchar filterType) {
     switch (filterType) {
         case 0:
-            this.filter = &avg3[0];
+            this.filter = &filter_avg3[0];
             this.size = 3;
             break;
         case 1:
-            this.filter = &avg5[0];
+            this.filter = &filter_avg5[0];
             this.size = 5;
             break;
         case 2:
-            this.filter = &sharpenWeak[0];
+            this.filter = &filter_sharpenWeak[0];
             this.size = 3;
             break;
         case 3:
-            this.filter = &sharpenStrong[0];
+            this.filter = &filter_sharpenStrong[0];
             this.size = 3;
             break;
         case 4:
-            this.filter = &gaussian3[0];
+            this.filter = &filter_gaussian3[0];
             this.size = 3;
             break;
         case 5:
-            this.filter = &gaussian5[0];
+            this.filter = &filter_gaussian5[0];
             this.size = 5;
             break;
         case 6:
-            this.filter = &edgeDetection[0];
+            this.filter = &filter_edgeDetection[0];
             this.size = 3;
             break;
         case 7:
-            this.filter = &embossing[0];
+            this.filter = &filter_embossing[0];
             this.size = 3;
             break;
     }

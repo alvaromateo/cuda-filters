@@ -46,8 +46,8 @@ class Kernel {
 		ExecutionType executionType;
 		unsigned short nThreads;
 		bool pinned;
-		ushort filterSize;
 		std::vector<std::string> imageNames;
+		uchar filterType;
 
 		// images to apply the filter
 		std::vector<Image> images;
@@ -58,11 +58,11 @@ class Kernel {
 		Filter initFilter();
 
 		// private kernel methods
-		void sequentialExec(const uchar *filter, uchar *image, unsigned int imageSize);
-		void singleCardSynExec(const uchar *filter, uchar *image, unsigned int imageSize);
-		void singleCardAsynExec(const uchar *filter, uchar *image, unsigned int imageSize);
-		void multiCardSynExec(const uchar *filter, uchar *image, unsigned int imageSize);
-		void multiCardAsynExec(const uchar *filter, uchar *image, unsigned int imageSize);
+		void sequentialExec(const Filter &filter, Image &image);
+		void singleCardSynExec(const Filter &filter, Image &image);
+		void singleCardAsynExec(const Filter &filter, Image &image);
+		void multiCardSynExec(const Filter &filter, Image &image);
+		void multiCardAsynExec(const Filter &filter, Image &image);
 		
 		// private methods for allocating memory
 		void getPinnedMemory();

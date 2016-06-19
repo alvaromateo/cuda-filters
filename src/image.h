@@ -49,26 +49,28 @@ class Matrix {
 		uchar trash;
 
 	public:
-		Matrix() : matrix(nullptr), width(0), height(0), trash(0) {}
+		Matrix() : matrix(0), width(0), height(0), trash(0) {}
 		Matrix(const uchar *matrix, uint w, uint h);
 		Matrix(const Matrix &matrix);
 		~Matrix();
 		uchar &operator[](int index);
 		// Matrix ops
+		inline uint getWidth() const { return width; }
+		inline uint getHeight() const { return height; }
 		inline uchar *getMatrix() const { return matrix; }
 		void setMatrix(const uchar *matrix);
 };
 
 
 // Filters available
-float avg3[9] = {1./9, 1./9, 1./9, 1./9, 1./9, 1./9, 1./9, 1./9, 1./9};
-float avg5[25] = {1./25, 1./25, 1./25, 1./25, 1./25, 1./25, 1./25, 1./25, 1./25, 1./25, 1./25, 1./25, 1./25, 1./25, 1./25, 1./25, 1./25, 1./25, 1./25, 1./25, 1./25, 1./25, 1./25, 1./25, 1./25};
-float sharpenWeak[9] = {0,-1,0,-1,5,-1,0,-1,0};
-float sharpenStrong[9] = {-1,-1,-1,-1,9,-1,-1,-1,-1};
-float gaussian3[9] = {1./16, 2./16, 1./16, 2./16, 4./16, 2./16, 1./16, 2./16, 1./16};
-float gaussian5[25] = {1./256, 4./256, 6./256, 4./256, 1./256, 4./256, 16./256, 24./256, 16./256, 4./256, 6./256, 24./256, 36./256, 24./256, 6./256, 4./256, 16./256, 24./256, 16./256, 4./256, 1./256, 4./256, 6./256, 4./256, 1./256};
-float edgeDetection[9] = {0,1,0,1,-4,1,0,1,0}; //Normalize result by adding 128 to all elements
-float embossing[9] = {-2,-1,0,-1,1,1,0,1,2};
+float filter_avg3[9] = {1./9, 1./9, 1./9, 1./9, 1./9, 1./9, 1./9, 1./9, 1./9};
+float filter_avg5[25] = {1./25, 1./25, 1./25, 1./25, 1./25, 1./25, 1./25, 1./25, 1./25, 1./25, 1./25, 1./25, 1./25, 1./25, 1./25, 1./25, 1./25, 1./25, 1./25, 1./25, 1./25, 1./25, 1./25, 1./25, 1./25};
+float filter_sharpenWeak[9] = {0,-1,0,-1,5,-1,0,-1,0};
+float filter_sharpenStrong[9] = {-1,-1,-1,-1,9,-1,-1,-1,-1};
+float filter_gaussian3[9] = {1./16, 2./16, 1./16, 2./16, 4./16, 2./16, 1./16, 2./16, 1./16};
+float filter_gaussian5[25] = {1./256, 4./256, 6./256, 4./256, 1./256, 4./256, 16./256, 24./256, 16./256, 4./256, 6./256, 24./256, 36./256, 24./256, 6./256, 4./256, 16./256, 24./256, 16./256, 4./256, 1./256, 4./256, 6./256, 4./256, 1./256};
+float filter_edgeDetection[9] = {0,1,0,1,-4,1,0,1,0}; //Normalize result by adding 128 to all elements
+float filter_embossing[9] = {-2,-1,0,-1,1,1,0,1,2};
 
 class Filter {
 	private:
@@ -82,23 +84,24 @@ class Filter {
 		// Filter ops
 		float &operator[](int index);
 		inline float *getFilter() const { return filter; }
+		inline uint getSize() const { return size; }
 };
 
 
 /*
- * Class that stores the RGB color frames of an image (or only one Matrix
- * if the image is in greyscale). Used to store the image returned by the
+ * Class that stores the RGB color frames of an image. Used to store the image returned by the
  * external library given the parameter of the file name.
  */
 class Image {
 	private:
 		std::vector<Matrix> img;
-		bool greyscale;
+		// bool greyscale;
 		std::string imageName;
 
 	public:
 		Image() : img() {}
 		Image(const std::string &imageName); // Throws exception std::invalid_argument
+		Image(const Image &otherImage);
 		Matrix &operator[](uint index);
 		// Getters and setters
 		inline std::vector<Matrix> &getImg() { return img; }
