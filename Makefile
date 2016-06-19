@@ -10,7 +10,7 @@ BUILDDIR = ./build/
 
 
 EXEFILTERS  = filters.exe
-OBJFILTERS  = mainFilters.o tools.o test.o image.o kernel.o
+OBJFILTERS  = mainFilters.o tools.o test.o image.o
 OBJINCLUDES = $(addprefix $(BUILDDIR),$(OBJFILTERS))
 
 
@@ -19,8 +19,10 @@ default: $(EXEFILTERS)
 $(BUILDDIR)%.o: %.cpp
 	$(NVCC) $(NVCC_FLAGS) $(PROG_FLAGS) -c -o $@ $<
 
+./build/kernel.o: kernel.cu
+	$(NVCC) $(NVCC_FLAGS) $(PROG_FLAGS) -c -o $@ $<
 
-$(EXEFILTERS): $(OBJINCLUDES)
+$(EXEFILTERS): $(OBJINCLUDES) ./build/kernel.o
 	$(NVCC) $^ -o $(EXEFILTERS) $(LD_FLAGS)
 
 

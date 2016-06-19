@@ -79,25 +79,25 @@ Kernel::Kernel(const CommandLineParser &clp) {
 	std::map<std::string, unsigned short>::const_iterator it = opts.find("exec");
 	// Initialize execution type
 	if (it != opts.end()) {
-		this.executionType = it->second;
+		this->executionType = it->second;
 	}
 	it = opts.find("pinned");
 	// Initialize type of memory
 	if (it != opts.end()) {
-		this.pinned = it->second;
+		this->pinned = it->second;
 	}
 	it = opts.find("threads");
 	// Initialize number of threads per block
 	if (it != opts.end()) {
-		this.nThreads = it->second;
+		this->nThreads = it->second;
 	}
 	it = opts.find("filter");
 	// Initialize filter type
 	if (it != opts.end()) {
-		this.filterType = it->second;
+		this->filterType = it->second;
 	}
 	
-	this.imageNames = clp.getImages();
+	this->imageNames = clp.getImages();
 
 	/* For the moment not used
 	it = opts.find("color");
@@ -113,7 +113,7 @@ void Kernel::applyFilter() {
 	filter = initFilter();
 
 	for (int i = 0; i < images.size(); ++i) {
-		switch (this.executionType) {
+		switch (this->executionType) {
 			case sequential:
 				sequentialExec(filter, images[i]);
 				break;
@@ -171,14 +171,14 @@ Filter Kernel::initFilter() {
  * or columns strictly speaking. "w"(width) and "h"(height) are the values of the image. The 
  * filter has a fixed size.
  */
-void Kernel::sequentialExec(const Filter &filter, Matrix &image) {
+void Kernel::sequentialExec(const Filter &f, Image &image) {
 	// Initialize the values
-	float *filter = filter.getFilter();
-	Matrix output(image);
+	float *filter = f.getFilter();
+	Image output(image);
 	uint w, h, filterSize;
 	w = image.getWidth();
 	h = image.getHeight();
-	filtersize = filter.getSize();
+	filterSize = f.getSize();
 	// Apply the filter
 	for(unsigned int x = 0; x < w; x++) {
 		for(unsigned int y = 0; y < h; y++) {
@@ -194,16 +194,18 @@ void Kernel::sequentialExec(const Filter &filter, Matrix &image) {
 				}
 			}
 			// Truncate values smaller than zero and larger than 255
-			output[y * w + x].r = std::min(std::max(int(factor * red + bias), 0), 255);
-			output[y * w + x].g = std::min(std::max(int(factor * green + bias), 0), 255);
-			output[y * w + x].b = std::min(std::max(int(factor * blue + bias), 0), 255);
+			output[0][y * w + x] = std::min(std::max(int(red), 0), 255);
+			output[1][y * w + x] = std::min(std::max(int(green), 0), 255);
+			output[2][y * w + x] = std::min(std::max(int(blue), 0), 255);
 		}
 	}
 	// Copy the result
-	image.setMatrix(output.getMatrix());
+	image[0].setMatrix(output[0].getMatrix());
+	image[1].setMatrix(output[1].getMatrix());
+	image[2].setMatrix(output[2].getMatrix());
 }
 
-void Kernel::singleCardSynExec(const uchar *filter, uchar *image, unsigned int imageSize) {
+void Kernel::singleCardSynExec(const Filter &f, Image &image) {/*
 	// Variables to calculate time spent in each job
 	float TiempoTotal, TiempoKernel;
 	cudaEvent_t E0, E1, E2, E3;
@@ -264,19 +266,19 @@ void Kernel::singleCardSynExec(const uchar *filter, uchar *image, unsigned int i
 		freeMemory();
 	}
 
-	destroyEvents(&E0, &E1, &E2, &E3);
+	destroyEvents(&E0, &E1, &E2, &E3);*/
 	
 }
 
-void Kernel::singleCardAsynExec(const uchar *filter, uchar *image, unsigned int imageSize) {
+void Kernel::singleCardAsynExec(const Filter &f, Image &image) {
 
 }
 
-void Kernel::multiCardSynExec(const uchar *filter, uchar *image, unsigned int imageSize) {
+void Kernel::multiCardSynExec(const Filter &f, Image &image) {
 
 }
 
-void Kernel::multiCardAsynExec(const uchar *filter, uchar *image, unsigned int imageSize) {
+void Kernel::multiCardAsynExec(const Filter &f, Image &image) {
 
 }
 

@@ -43,7 +43,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 class Kernel {
 	private:
 		// private execution type variables
-		ExecutionType executionType;
+		uint executionType;
 		unsigned short nThreads;
 		bool pinned;
 		std::vector<std::string> imageNames;
@@ -58,11 +58,11 @@ class Kernel {
 		Filter initFilter();
 
 		// private kernel methods
-		void sequentialExec(const Filter &filter, Image &image);
-		void singleCardSynExec(const Filter &filter, Image &image);
-		void singleCardAsynExec(const Filter &filter, Image &image);
-		void multiCardSynExec(const Filter &filter, Image &image);
-		void multiCardAsynExec(const Filter &filter, Image &image);
+		void sequentialExec(const Filter &f, Image &image);
+		void singleCardSynExec(const Filter &f, Image &image);
+		void singleCardAsynExec(const Filter &f, Image &image);
+		void multiCardSynExec(const Filter &f, Image &image);
+		void multiCardAsynExec(const Filter &f, Image &image);
 		
 		// private methods for allocating memory
 		void getPinnedMemory();
