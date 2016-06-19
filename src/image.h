@@ -53,12 +53,35 @@ class Matrix {
 		Matrix(const uchar *matrix, uint w, uint h);
 		Matrix(const Matrix &matrix);
 		~Matrix();
-		uchar &operator[](uint index);
+		uchar &operator[](int index);
 		// Matrix ops
-		uchar *getMatrix() const { return matrix; }
+		inline uchar *getMatrix() const { return matrix; }
 		void setMatrix(const uchar *matrix);
+};
+
+
+// Filters available
+float avg3[9] = {1./9, 1./9, 1./9, 1./9, 1./9, 1./9, 1./9, 1./9, 1./9};
+float avg5[25] = {1./25, 1./25, 1./25, 1./25, 1./25, 1./25, 1./25, 1./25, 1./25, 1./25, 1./25, 1./25, 1./25, 1./25, 1./25, 1./25, 1./25, 1./25, 1./25, 1./25, 1./25, 1./25, 1./25, 1./25, 1./25};
+float sharpenWeak[9] = {0,-1,0,-1,5,-1,0,-1,0};
+float sharpenStrong[9] = {-1,-1,-1,-1,9,-1,-1,-1,-1};
+float gaussian3[9] = {1./16, 2./16, 1./16, 2./16, 4./16, 2./16, 1./16, 2./16, 1./16};
+float gaussian5[25] = {1./256, 4./256, 6./256, 4./256, 1./256, 4./256, 16./256, 24./256, 16./256, 4./256, 6./256, 24./256, 36./256, 24./256, 6./256, 4./256, 16./256, 24./256, 16./256, 4./256, 1./256, 4./256, 6./256, 4./256, 1./256};
+float edgeDetection[9] = {0,1,0,1,-4,1,0,1,0}; //Normalize result by adding 128 to all elements
+float embossing[9] = {-2,-1,0,-1,1,1,0,1,2};
+
+class Filter {
+	private:
+		float *filter;
+		uint size;
+		float trash;
+
+	public:
+		Filter() {}
+		Filter(uchar filterType);
 		// Filter ops
-		void initializeFilter(uchar filterType);
+		float &operator[](int index);
+		inline float *getFilter() const { return filter; }
 };
 
 
@@ -78,7 +101,7 @@ class Image {
 		Image(const std::string &imageName); // Throws exception std::invalid_argument
 		Matrix &operator[](uint index);
 		// Getters and setters
-		std::vector<Matrix> &getImg() { return img; }
+		inline std::vector<Matrix> &getImg() { return img; }
 		void setImage(const std::string &imageName); // Throws exception std::invalid_argument
 		void saveImageToDisk();
 

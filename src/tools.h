@@ -41,7 +41,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <cstdlib>
 
 
-#define DEFAULT_FILTER_SIZE 5
 #define DEFAULT_FILTER_TYPE 0
 #define THREADS 32
 #define MAX_THREAD_NUMBER 1024
@@ -52,8 +51,14 @@ typedef unsigned char uchar;
 typedef unsigned int uint;
 
 enum FilterType {
-	blur,
-	sharpen
+	avg3,
+	avg5,
+	sharpenWeak,
+	sharpenStrong,
+	gaussian3,
+	gaussian5,
+	edgeDetection,
+	embossing
 };
 
 enum ExecutionType {
@@ -77,9 +82,8 @@ class CommandLineParser {
 
 	public:
 		CommandLineParser(int &argc, char **&argv);
-		inline const std::vector<std::string> &getImages() const { return images; }
+		inline std::vector<std::string> getImages() const { return images; }
 		inline const std::map<std::string, unsigned short> &getOptions() const { return opts; }
-		unsigned short getFilterSize();
 
 	private:
 		std::vector<std::string> images;

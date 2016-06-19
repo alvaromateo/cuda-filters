@@ -46,14 +46,16 @@ class Kernel {
 		ExecutionType executionType;
 		unsigned short nThreads;
 		bool pinned;
+		ushort filterSize;
+		std::vector<std::string> imageNames;
 
 		// images to apply the filter
 		std::vector<Image> images;
 		// filter to use with the filter
-		Matrix filter;
+		Filter filter;
 		// private methods to initialize the filter and images
 		std::vector<Image> loadImages();
-		Matrix initFilter();
+		Filter initFilter();
 
 		// private kernel methods
 		void sequentialExec(const uchar *filter, uchar *image, unsigned int imageSize);

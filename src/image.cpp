@@ -72,21 +72,12 @@ Matrix::~Matrix() {
  * Redefinition of the subscript operator to allow access to the different
  * elements of the matrix.
  */
-uchar &Matrix::operator[](uint index) {
-    if (index < (width * height)) {
+uchar &Matrix::operator[](int index) {
+    if (index < (width * height) && index >= 0) {
         return this.matrix[index];
     }
     return trash;
 }
-
-/*
- * Function that given a filter type initializes this.matrix with the values
- * required for that filter to work inside the kernel.
- */
-void Matrix::initializeFilter(uchar filterType) {
-	// TODO: implement the filter initializer
-}
-
 
 /*
  * Matrix private methods
@@ -199,4 +190,53 @@ void Image::saveImageToDisk() {
     imageName = imageName.substr(0, imageName.length()-4);
     imageName += "_filter.png";
     stbi_write_png(imageName.c_str(), width, height, bitDepth, image, width*3);
+}
+
+
+/**
+ * Filter public methods
+ */
+
+Filter::Filter(uchar filterType) {
+    switch (filterType) {
+        case 0:
+            this.filter = &avg3[0];
+            this.size = 3;
+            break;
+        case 1:
+            this.filter = &avg5[0];
+            this.size = 5;
+            break;
+        case 2:
+            this.filter = &sharpenWeak[0];
+            this.size = 3;
+            break;
+        case 3:
+            this.filter = &sharpenStrong[0];
+            this.size = 3;
+            break;
+        case 4:
+            this.filter = &gaussian3[0];
+            this.size = 3;
+            break;
+        case 5:
+            this.filter = &gaussian5[0];
+            this.size = 5;
+            break;
+        case 6:
+            this.filter = &edgeDetection[0];
+            this.size = 3;
+            break;
+        case 7:
+            this.filter = &embossing[0];
+            this.size = 3;
+            break;
+    }
+}
+
+float &Filter::operator[](int index) {
+    if (index < size) {
+        return filter[index];
+    }
+    return trash;
 }

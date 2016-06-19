@@ -102,18 +102,6 @@ CommandLineParser::CommandLineParser(int &argc, char **&argv) {
 	}
 }
 
-/**
- * return: the filter size specified in the command line arguments or the default one
- */
-unsigned short CommandLineParser::getFilterSize() {
-	unsigned int size = DEFAULT_FILTER_SIZE;
-	std::map<std::string, unsigned short>::const_iterator it = opts.find("size");
-	if (it != opts.end()) {
-		size = it->second;
-	}
-	return size;
-}
-
 
 /**
  * CommandLineParser private methods
@@ -125,7 +113,6 @@ unsigned short CommandLineParser::getFilterSize() {
  * the default options.
  */
 void CommandLineParser::initOptions() {
-	opts.insert(std::pair<std::string, unsigned short> (std::string("size"), DEFAULT_FILTER_SIZE));
 	opts.insert(std::pair<std::string, unsigned short> (std::string("filter"), DEFAULT_FILTER_TYPE));
 	opts.insert(std::pair<std::string, unsigned short> (std::string("show"), 0));
 	opts.insert(std::pair<std::string, unsigned short> (std::string("threads"), THREADS));
@@ -166,21 +153,13 @@ unsigned short CommandLineParser::getOptionValue(const char *const &argument, co
 	unsigned short value = 0;
 	if (key == "show" || key == "pinned") {
 		value = 1;
-	} else if (key == "size" || key == "threads") {
-		// the size can only be odd values bigger than 3
+	} else if (key == "threads") {
 		try {
 			value = my_stoul(argument);
 		} catch (std::exception &e) {
 			doHelp();
 		}
-		// if the number is not odd we substract 1 if we are getting the size
-		if (key == "size" && value > 2) {
-			if (!(value % 2)) {
-				--value;
-			}
-		} else if (key == "threads" && (value > MAX_THREAD_NUMBER) && !is_power_of_2(value)) {
-			doHelp();
-		} else {
+		if ((value > MAX_THREAD_NUMBER) && !is_power_of_2(value)) {
 			doHelp();
 		}
 	} else if (key == "filter" || key == "color" || key == "exec") {
@@ -201,10 +180,22 @@ unsigned short CommandLineParser::getOptionValue(const char *const &argument, co
 unsigned short CommandLineParser::transformTypeToInt(const std::string &type) {
 	unsigned short typeNum = 0;
 	// Add different filter types here and in the tools.h enum
-	if (!type.compare("blur")) {
-		typeNum = blur;
-	} else if (!type.compare("sharpen")) {
-		typeNum = sharpen;
+	if (!type.compare("avg3")) {
+		typeNum = avg3;
+	} else if (!type.compare("avg5")) {
+		typeNum = avg5;
+	} else if (!type.compare("sharpenWeak")) {
+		typeNum = sharpenWeak;
+	} else if (!type.compare("sharpenStrong")) {
+		typeNum = sharpenStrong;
+	} else if (!type.compare("gaussian3")) {
+		typeNum = gaussian3;
+	} else if (!type.compare("gaussian5")) {
+		typeNum = gaussian5;
+	} else if (!type.compare("edgeDetection")) {
+		typeNum = edgeDetection;
+	} else if (!type.compare("embossing")) {
+		typeNum = embossing;
 	} else if (!type.compare("rgb")) {
 		typeNum = rgb;
 	} else if (!type.compare("grayscale")) {
@@ -236,7 +227,7 @@ unsigned short CommandLineParser::transformTypeToInt(const std::string &type) {
 bool CommandLineParser::isValid(std::string &key, int *index) {
 	bool valid = false;
 	if (!key.empty()) {
-		if (key == "size" || key == "filter" || key == "threads" || key == "exec" || key == "color") {
+		if (key == "filter" || key == "threads" || key == "exec" || key == "color") {
 			valid = true;
 			++(*index); // increment index to check for the value
 		} else if (key == "show") {
@@ -281,9 +272,8 @@ void CommandLineParser::doHelp() {
 	std::ostringstream help;
 	help << "Usage: cudafilters.exe image.png [image2.png image3.png ...] options" << std::endl;
 	help << "Options can be:" << std::endl;
-	help << "	--size x	where x is an odd number bigger than 2" << std::endl;
 	help << "	--filter f 	where f is one of the following filter types:" << std::endl;
-	help << "					blur, sharpen" << std::endl;
+	help << "					avg3 (default), avg5, sharpenWeak, sharpenStrong, gaussian3, gaussian5, edgeDetection, embossing" << std::endl;
 	help << "	--show|-s	if set, the modified images are opened when the program finishes" << std::endl;
 	help << "	--pinned|-p 	if set, the program will use pinned memory" << std::endl;
 	help << "	--exec e 	where e is one of the following execution types:" << std::endl;

@@ -91,16 +91,20 @@ Kernel::Kernel(const CommandLineParser &clp) {
 	if (it != opts.end()) {
 		this.nThreads = it->second;
 	}
-	it = opts.find("color");
-	// Initialize type of color
-	if (it != opts.end()) {
-		this.color = it->second;
-	}
 	it = opts.find("size");
 	// Initialize filter size
 	if (it != opts.end()) {
 		this.filterSize = it->second;
 	}
+	this.imageNames = clp.getImages();
+
+	/* For the moment not used
+	it = opts.find("color");
+	// Initialize type of color
+	if (it != opts.end()) {
+		this.color = it->second;
+	}
+	*/
 }
 
 void Kernel::applyFilter() {
