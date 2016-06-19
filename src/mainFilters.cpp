@@ -50,7 +50,7 @@ int main(int argc, char **argv) {
 	clpTest.doTest();
 #endif
 	
-	// initialize filter
-	const unsigned int filterSize = clp.getFilterSize();
+	Kernel kernel(clp);
+	kernel.applyFilter();
 	
 }

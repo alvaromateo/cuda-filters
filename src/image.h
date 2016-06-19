@@ -43,12 +43,17 @@ class Matrix {
 		uchar *matrix;
 		uint width;
 		uint height;
+		// this uchar is the one that we return when we subscript an index out
+		// of bounds because of the filter position. Thanks to this we won't have
+		// to take care of this problem.
+		uchar trash;
 
 	public:
-		Matrix() : matrix(nullptr), width(0), height(0) {}
+		Matrix() : matrix(nullptr), width(0), height(0), trash(0) {}
 		Matrix(const uchar *matrix, uint w, uint h);
 		Matrix(const Matrix &matrix);
 		~Matrix();
+		uchar &operator[](uint index);
 		// Matrix ops
 		uchar *getMatrix() const { return matrix; }
 		void setMatrix(const uchar *matrix);
@@ -71,6 +76,7 @@ class Image {
 	public:
 		Image() : img() {}
 		Image(const std::string &imageName); // Throws exception std::invalid_argument
+		Matrix &operator[](uint index);
 		// Getters and setters
 		std::vector<Matrix> &getImg() { return img; }
 		void setImage(const std::string &imageName); // Throws exception std::invalid_argument

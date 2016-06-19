@@ -47,13 +47,20 @@ class Kernel {
 		unsigned short nThreads;
 		bool pinned;
 
+		// images to apply the filter
+		std::vector<Image> images;
+		// filter to use with the filter
+		Matrix filter;
+		// private methods to initialize the filter and images
+		std::vector<Image> loadImages();
+		Matrix initFilter();
+
 		// private kernel methods
 		void sequentialExec(const uchar *filter, uchar *image, unsigned int imageSize);
 		void singleCardSynExec(const uchar *filter, uchar *image, unsigned int imageSize);
 		void singleCardAsynExec(const uchar *filter, uchar *image, unsigned int imageSize);
 		void multiCardSynExec(const uchar *filter, uchar *image, unsigned int imageSize);
 		void multiCardAsynExec(const uchar *filter, uchar *image, unsigned int imageSize);
-		// new method with only one input-output matrix, overwriting it?
 		
 		// private methods for allocating memory
 		void getPinnedMemory();
@@ -66,7 +73,8 @@ class Kernel {
 	public:
 		Kernel() : executionType(sequential), nThreads(THREADS), pinned(false) {}
 		Kernel(const CommandLineParser &clp);
-		void applyFilter(const uchar *filter, uchar *image);
+		void applyFilter();
+		void saveImages();
 };
 
 

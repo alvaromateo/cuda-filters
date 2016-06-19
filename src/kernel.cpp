@@ -32,7 +32,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <algorithm>
 
 
-/*
+/**
  * Kernels
  */
 
@@ -41,13 +41,36 @@ __global__ void kernel1() {
 }
 
 
+/**
+ * CUDA util methods
+ */
+
+void createEvents(cudaEvent_t &E0, cudaEvent_t &E1, cudaEvent_t &E2, cudaEvent_t &E3) {
+	cudaEventCreate(&E0);
+	cudaEventCreate(&E1);
+	cudaEventCreate(&E2);
+	cudaEventCreate(&E3);
+}
+
+void destroyEvents(cudaEvent_t &E0, cudaEvent_t &E1, cudaEvent_t &E2, cudaEvent_t &E3) {
+	cudaEventDestroy(E0);
+	cudaEventDestroy(E1);
+	cudaEventDestroy(E2);
+	cudaEventDestroy(E3);	
+}
+
+void recordEvent(cudaEvent_t &E) {
+	cudaEventRecord(E, 0);
+	cudaEventSynchronize(E);
+}
+
 
 /*
  * Kernel public methods
  */
 
 
-/*
+/**
  * Constructor that takes a CommandLineParser object and uses it to initialize
  * all the values needed for the kernel to be launched.
  */
@@ -80,23 +103,27 @@ Kernel::Kernel(const CommandLineParser &clp) {
 	}
 }
 
-void Kernel::applyFilter(const Filter &filter, Image &image) {
-	switch (this.executionType) {
-		case sequential:
-			sequentialExec(filter, image);
-			break;
-		case singleCardSyn:
-			singleCardSynExec(filter, image);
-			break;
-		case singleCardAsyn:
-			singleCardAsynExec(filter, image);
-			break;
-		case multiCardSyn:
-			multiCardSynExec(filter, image);
-			break;
-		case multiCardAsyn:
-			multiCardAsynExec(filter, image);
-			break;
+void Kernel::applyFilter() {
+	images = loadImages();
+	filter = initFilter();
+	for (int i = 0; i < images.size(); ++i) {
+		switch (this.executionType) {
+			case sequential:
+				sequentialExec(filter, images[i]);
+				break;
+			case singleCardSyn:
+				singleCardSynExec(filter, images[i]);
+				break;
+			case singleCardAsyn:
+				singleCardAsynExec(filter, images[i]);
+				break;
+			case multiCardSyn:
+				multiCardSynExec(filter, images[i]);
+				break;
+			case multiCardAsyn:
+				multiCardAsynExec(filter, images[i]);
+				break;
+		}
 	}
 }
 
@@ -107,6 +134,21 @@ void Kernel::applyFilter(const Filter &filter, Image &image) {
 
 
 /**
+ * This method loads the images based on the values of the CommandLineParser. They are
+ * stored in a vector containing all the images inserted.
+ */
+std::vector<Image> Kernel::loadImages() {
+
+}
+
+/**
+ * Method to initialize the filter and save it into a private variable.
+ */
+Matrix Kernel::initFilter() {
+
+}
+
+/**
  * Sequential execution to apply the filter to the image. The image is an address of a vector
  * which is consecutively stored in memory (so it behaves as an array), an doesn't have rows
  * or columns strictly speaking. "w"(width) and "h"(height) are the values of the image. The 
@@ -114,18 +156,20 @@ void Kernel::applyFilter(const Filter &filter, Image &image) {
  */
 void Kernel::sequentialExec(const uchar *filter, const uchar *image, unsigned int w, 
 							unsigned int h, uchar *output, unsigned int filterSize) {
+	// Initialize the values
+
 	// Apply the filter
 	for(unsigned int x = 0; x < w; x++) {
 		for(unsigned int y = 0; y < h; y++) {
 			double red = 0.0, green = 0.0, blue = 0.0;
 			// Multiply every value of the filter with corresponding image pixel
-			for(int filterX = 0; filterX < filterSize; filterX++) {
-				for(int filterY = 0; filterY < filterSize; filterY++) {
+			for(int filterY = 0; filterY < filterSize; filterY++) {
+				for(int filterX = 0; filterX < filterSize; filterX++) {
 					int imageX = (x - filterSize / 2 + filterX + w) % w;
 					int imageY = (y - filterSize / 2 + filterY + h) % h;
-					red += image[imageY * w + imageX].r * filter[filterY][filterX];
-					green += image[imageY * w + imageX].g * filter[filterY][filterX];
-					blue += image[imageY * w + imageX].b * filter[filterY][filterX];
+					red += image.getImg()[0].getMatrix()[imageY * w + imageX] * filter[filterY * filterSize + filterX];
+					green += image.getImg()[1].getMatrix()[imageY * w + imageX] * filter[filterY * filterSize + filterX];
+					blue += image.getImg()[2].getMatrix()[imageY * w + imageX] * filter[filterY * filterSize + filterX];
 				}
 			}
 			// Truncate values smaller than zero and larger than 255
@@ -211,23 +255,4 @@ void Kernel::multiCardSynExec(const uchar *filter, uchar *image, unsigned int im
 
 void Kernel::multiCardAsynExec(const uchar *filter, uchar *image, unsigned int imageSize) {
 
-}
-
-void Kernel::createEvents(cudaEvent_t &E0, cudaEvent_t &E1, cudaEvent_t &E2, cudaEvent_t &E3) {
-	cudaEventCreate(&E0);
-	cudaEventCreate(&E1);
-	cudaEventCreate(&E2);
-	cudaEventCreate(&E3);
-}
-
-void Kernel::destroyEvents(cudaEvent_t &E0, cudaEvent_t &E1, cudaEvent_t &E2, cudaEvent_t &E3) {
-	cudaEventDestroy(E0);
-	cudaEventDestroy(E1);
-	cudaEventDestroy(E2);
-	cudaEventDestroy(E3);	
-}
-
-void Kernel::recordEvent(cudaEvent_t &E) {
-	cudaEventRecord(E, 0);
-	cudaEventSynchronize(E);
 }

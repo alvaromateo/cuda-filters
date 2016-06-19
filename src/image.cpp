@@ -45,7 +45,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
   * Constructor that creates a matrix stored in the heap with the given width
   * and height.
   */
-Matrix::Matrix(const uchar *matrix, uint w, uint h) : matrix(nullptr), width(w), height(h) {
+Matrix::Matrix(const uchar *matrix, uint w, uint h) : matrix(nullptr), width(w), height(h), trash(0) {
 	this.matrix = new uchar[width * height];
 	copyMatrix(matrix, this.matrix);
 }
@@ -56,6 +56,7 @@ Matrix::Matrix(const uchar *matrix, uint w, uint h) : matrix(nullptr), width(w),
 Matrix::Matrix(const Matrix &matrix) {
 	this.width = matrix.width;
 	this.height = matrix.height;
+    this.trash = 0;
 	this.matrix = new uchar[this.width * this.height];
 	copyMatrix(matrix.matrix, this.matrix);
 }
@@ -65,6 +66,17 @@ Matrix::Matrix(const Matrix &matrix) {
  */
 Matrix::~Matrix() {
 	delete [] this.matrix;
+}
+
+/*
+ * Redefinition of the subscript operator to allow access to the different
+ * elements of the matrix.
+ */
+uchar &Matrix::operator[](uint index) {
+    if (index < (width * height)) {
+        return this.matrix[index];
+    }
+    return trash;
 }
 
 /*
@@ -108,6 +120,25 @@ Image::Image(const std::string &imageName) {
     	// Re-throw exception
     	throw e;
     }
+}
+
+/*
+ * Redefinition of the subscript operator to allow access to the different color
+ * frames inside this object. index can be one of 3 values.
+ *      red = 0
+ *      green = 1
+ *      blue = 2
+ *
+ * return: returns a Matrix object corresponding to the channel color provided by
+ * index.
+ */
+Matrix &Image::operator[](uint index) {
+    if (index < 3) {
+        return this.img[index];
+    }
+    // if someone is trying to access an invalid element we return the red color
+    // channel
+    return img[0];
 }
 
 /*
