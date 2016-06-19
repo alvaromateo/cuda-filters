@@ -52,17 +52,17 @@ class Kernel {
 		// images to apply the filter
 		std::vector<Image> images;
 		// filter to use with the filter
-		Filter filter;
+		Matrix<float> filter;
 		// private methods to initialize the filter and images
 		std::vector<Image> loadImages();
-		Filter initFilter();
+		Matrix<float> initFilter();
 
 		// private kernel methods
-		void sequentialExec(const Filter &f, Image &image);
-		void singleCardSynExec(const Filter &f, Image &image);
-		void singleCardAsynExec(const Filter &f, Image &image);
-		void multiCardSynExec(const Filter &f, Image &image);
-		void multiCardAsynExec(const Filter &f, Image &image);
+		void sequentialExec(const Matrix<float> &f, Image &image);
+		void singleCardSynExec(const Matrix<float> &f, Image &image);
+		void singleCardAsynExec(const Matrix<float> &f, Image &image);
+		void multiCardSynExec(const Matrix<float> &f, Image &image);
+		void multiCardAsynExec(const Matrix<float> &f, Image &image);
 		
 		// private methods for allocating memory
 		void getPinnedMemory();

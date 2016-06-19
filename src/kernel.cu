@@ -29,7 +29,64 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 // Includes
 #include "kernel.h"
-#include <algorithm>
+#include <utility>
+
+
+/*
+ * Filter definitions
+ */
+
+namespace {
+    float filter_avg3[9] = {1./9, 1./9, 1./9, 1./9, 1./9, 1./9, 1./9, 1./9, 1./9};
+    float filter_avg5[25] = {1./25, 1./25, 1./25, 1./25, 1./25, 1./25, 1./25, 1./25, 1./25, 1./25, 1./25, 1./25, 1./25, 1./25, 1./25, 1./25, 1./25, 1./25, 1./25, 1./25, 1./25, 1./25, 1./25, 1./25, 1./25};
+    float filter_sharpenWeak[9] = {0,-1,0,-1,5,-1,0,-1,0};
+    float filter_sharpenStrong[9] = {-1,-1,-1,-1,9,-1,-1,-1,-1};
+    float filter_gaussian3[9] = {1./16, 2./16, 1./16, 2./16, 4./16, 2./16, 1./16, 2./16, 1./16};
+    float filter_gaussian5[25] = {1./256, 4./256, 6./256, 4./256, 1./256, 4./256, 16./256, 24./256, 16./256, 4./256, 6./256, 24./256, 36./256, 24./256, 6./256, 4./256, 16./256, 24./256, 16./256, 4./256, 1./256, 4./256, 6./256, 4./256, 1./256};
+    float filter_edgeDetection[9] = {0,1,0,1,-4,1,0,1,0}; //Normalize result by adding 128 to all elements
+    float filter_embossing[9] = {-2,-1,0,-1,1,1,0,1,2};
+}
+
+
+std::pair<float *, uint> getFilter(uchar filterType) {
+	float *filter;
+	uint size;
+	switch (filterType) {
+        case 0:
+            filter = &filter_avg3[0];
+            size = 3;
+            break;
+        case 1:
+            filter = &filter_avg5[0];
+            size = 5;
+            break;
+        case 2:
+            filter = &filter_sharpenWeak[0];
+            size = 3;
+            break;
+        case 3:
+            filter = &filter_sharpenStrong[0];
+            size = 3;
+            break;
+        case 4:
+            filter = &filter_gaussian3[0];
+            size = 3;
+            break;
+        case 5:
+            filter = &filter_gaussian5[0];
+            size = 5;
+            break;
+        case 6:
+            filter = &filter_edgeDetection[0];
+            size = 3;
+            break;
+        case 7:
+            filter = &filter_embossing[0];
+            size = 3;
+            break;
+    }
+    return std::make_pair(filter, size);
+}
 
 
 /**
@@ -160,8 +217,9 @@ std::vector<Image> Kernel::loadImages() {
 /**
  * Method to initialize the filter and save it into a private variable.
  */
-Filter Kernel::initFilter() {
-	Filter filter(filterType);
+Matrix<float> Kernel::initFilter() {
+	std::pair<float *, uint> filterOpts = getFilter(filterType);
+	Matrix<float> filter(filterOpts.first, filterOpts.second, filterOpts.second);
 	return filter;
 }
 
@@ -171,15 +229,14 @@ Filter Kernel::initFilter() {
  * or columns strictly speaking. "w"(width) and "h"(height) are the values of the image. The 
  * filter has a fixed size.
  */
-void Kernel::sequentialExec(const Filter &f, Image &image) {
-	std::cerr << "Hola" << std::endl;
+void Kernel::sequentialExec(const Matrix<float> &f, Image &image) {
 	// Initialize the values
-	float *filter = f.getFilter();
+	float *filter = f.getMatrix();
 	Image output(image);
 	uint w, h, filterSize;
 	w = image.getWidth();
 	h = image.getHeight();
-	filterSize = f.getSize();
+	filterSize = f.getWidth(); // In the filter width == height
 	// Apply the filter
 	for(unsigned int x = 0; x < w; x++) {
 		for(unsigned int y = 0; y < h; y++) {
@@ -206,7 +263,8 @@ void Kernel::sequentialExec(const Filter &f, Image &image) {
 	image[2].setMatrix(output[2].getMatrix());
 }
 
-void Kernel::singleCardSynExec(const Filter &f, Image &image) {/*
+void Kernel::singleCardSynExec(const Matrix<float> &f, Image &image) {
+/*
 	// Variables to calculate time spent in each job
 	float TiempoTotal, TiempoKernel;
 	cudaEvent_t E0, E1, E2, E3;
@@ -267,19 +325,20 @@ void Kernel::singleCardSynExec(const Filter &f, Image &image) {/*
 		freeMemory();
 	}
 
-	destroyEvents(&E0, &E1, &E2, &E3);*/
+	destroyEvents(&E0, &E1, &E2, &E3);
+*/
 	
 }
 
-void Kernel::singleCardAsynExec(const Filter &f, Image &image) {
+void Kernel::singleCardAsynExec(const Matrix<float> &f, Image &image) {
 
 }
 
-void Kernel::multiCardSynExec(const Filter &f, Image &image) {
+void Kernel::multiCardSynExec(const Matrix<float> &f, Image &image) {
 
 }
 
-void Kernel::multiCardAsynExec(const Filter &f, Image &image) {
+void Kernel::multiCardAsynExec(const Matrix<float> &f, Image &image) {
 
 }
 

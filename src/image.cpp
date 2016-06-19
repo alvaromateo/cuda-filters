@@ -36,88 +36,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "stb_image_write.h"
 
 
-/*
- * Filter definitions
- */
-
-namespace {
-    float filter_avg3[9] = {1./9, 1./9, 1./9, 1./9, 1./9, 1./9, 1./9, 1./9, 1./9};
-    float filter_avg5[25] = {1./25, 1./25, 1./25, 1./25, 1./25, 1./25, 1./25, 1./25, 1./25, 1./25, 1./25, 1./25, 1./25, 1./25, 1./25, 1./25, 1./25, 1./25, 1./25, 1./25, 1./25, 1./25, 1./25, 1./25, 1./25};
-    float filter_sharpenWeak[9] = {0,-1,0,-1,5,-1,0,-1,0};
-    float filter_sharpenStrong[9] = {-1,-1,-1,-1,9,-1,-1,-1,-1};
-    float filter_gaussian3[9] = {1./16, 2./16, 1./16, 2./16, 4./16, 2./16, 1./16, 2./16, 1./16};
-    float filter_gaussian5[25] = {1./256, 4./256, 6./256, 4./256, 1./256, 4./256, 16./256, 24./256, 16./256, 4./256, 6./256, 24./256, 36./256, 24./256, 6./256, 4./256, 16./256, 24./256, 16./256, 4./256, 1./256, 4./256, 6./256, 4./256, 1./256};
-    float filter_edgeDetection[9] = {0,1,0,1,-4,1,0,1,0}; //Normalize result by adding 128 to all elements
-    float filter_embossing[9] = {-2,-1,0,-1,1,1,0,1,2};
-}
-
-
-/**
- * Matrix public methods
- */
-
-
- /*
-  * Constructor that creates a matrix stored in the heap with the given width
-  * and height.
-  */
-Matrix::Matrix(const uchar *matrix, uint w, uint h) : matrix(0), width(w), height(h), trash(0) {
-	this->matrix = new uchar[width * height];
-	copyMatrix(matrix, this->matrix);
-}
-
-/*
- * Copy constructor.
- */
-Matrix::Matrix(const Matrix &matrix) {
-	this->width = matrix.width;
-	this->height = matrix.height;
-    this->trash = 0;
-	this->matrix = new uchar[this->width * this->height];
-	copyMatrix(matrix.matrix, this->matrix);
-}
-
-/*
- * Destructor to free memory.
- */
-Matrix::~Matrix() {
-	delete[] this->matrix;
-}
-
-/*
- * Redefinition of the subscript operator to allow access to the different
- * elements of the matrix.
- */
-uchar &Matrix::operator[](int index) {
-    if (index < (width * height) && index >= 0) {
-        return this->matrix[index];
-    }
-    return trash;
-}
-
-/*
- * Method to copy another matrix. matrix has to have the same size of this.matrix.
- */
-void Matrix::setMatrix(const uchar *matrix) {
-    copyMatrix(matrix, this->matrix);
-}
-
-
-/*
- * Matrix private methods
- */
-
-
-/*
- * Method that copies an array.
- */
-void Matrix::copyMatrix(const uchar *matrix, uchar *mat) {
-	for (uint i = 0; i < (this->width * this->height); ++i) {
-		mat[i] = matrix[i];
-	}
-}
-
-
 /**
  * Image public methods
  */
@@ -127,7 +45,7 @@ void Matrix::copyMatrix(const uchar *matrix, uchar *mat) {
   * Constructor to create an image given a name that corresponds to an image in
   * the file system.
   */
-Image::Image(const std::string &imageName) {
+Image::Image(const std::string &imageName) : width(0), height(0), bitDepth(0) {
     this->imageName = imageName;
 	this->img = loadImageFromDisk(imageName);
 }
@@ -135,11 +53,11 @@ Image::Image(const std::string &imageName) {
 /*
  * Copy constructor
  */
-Image::Image(const Image &otherImage) {
+Image::Image(const Image &otherImage) : width(0), height(0), bitDepth(0) {
     this->imageName = otherImage.imageName;
-    this->img = std::vector<Matrix> (3);
+    this->img = std::vector<Matrix<uchar> > (3);
     for (int i = 0; i < otherImage.img.size(); ++i) {
-        Matrix mat(otherImage.img[i]);
+        Matrix<uchar> mat(otherImage.img[i]);
         img[i] = mat;
     }
 }
@@ -154,7 +72,7 @@ Image::Image(const Image &otherImage) {
  * return: returns a Matrix object corresponding to the channel color provided by
  * index.
  */
-Matrix &Image::operator[](uint index) {
+Matrix<uchar> &Image::operator[](uint index) {
     if (index < 3) {
         return this->img[index];
     }
@@ -177,7 +95,7 @@ void Image::setImage(const std::string &imageName) {
  * 
  * return: a vector with 3 matrix objects, one for each color channel of an image.
  */
-std::vector<Matrix> Image::loadImageFromDisk(const std::string &imageName) {
+std::vector<Matrix<uchar> > Image::loadImageFromDisk(const std::string &imageName) {
     uchar* image = stbi_load(imageName.c_str(), &width, &height, &bitDepth, 3);
 
     // Check for invalid input
@@ -194,13 +112,14 @@ std::vector<Matrix> Image::loadImageFromDisk(const std::string &imageName) {
         blue[j]  = image[i+2];
     }
 
-    std::vector<Matrix> img(3);
-    Matrix redMat(red, width, height);
-    Matrix greenMat(green, width, height);
-    Matrix blueMat(blue, width, height);
-    img[0] = redMat;
-    img[1] = greenMat;
-    img[2] = blueMat;
+    std::vector<Matrix<uchar> > img;
+    Matrix<uchar> redMat(red, width, height);
+    Matrix<uchar> greenMat(green, width, height);
+    Matrix<uchar> blueMat(blue, width, height);
+    img.push_back(redMat);
+    img.push_back(greenMat);
+    img.push_back(blueMat);
+    std::free(image);
 
     return img;
 }
@@ -223,53 +142,4 @@ void Image::saveImageToDisk() {
     }
     stbi_write_png(imageName.c_str(), width, height, bitDepth, &image[0], width*3);
     delete[] image;
-}
-
-
-/**
- * Filter public methods
- */
-
-Filter::Filter(uchar filterType) {
-    switch (filterType) {
-        case 0:
-            this->filter = &filter_avg3[0];
-            this->size = 3;
-            break;
-        case 1:
-            this->filter = &filter_avg5[0];
-            this->size = 5;
-            break;
-        case 2:
-            this->filter = &filter_sharpenWeak[0];
-            this->size = 3;
-            break;
-        case 3:
-            this->filter = &filter_sharpenStrong[0];
-            this->size = 3;
-            break;
-        case 4:
-            this->filter = &filter_gaussian3[0];
-            this->size = 3;
-            break;
-        case 5:
-            this->filter = &filter_gaussian5[0];
-            this->size = 5;
-            break;
-        case 6:
-            this->filter = &filter_edgeDetection[0];
-            this->size = 3;
-            break;
-        case 7:
-            this->filter = &filter_embossing[0];
-            this->size = 3;
-            break;
-    }
-}
-
-float &Filter::operator[](int index) {
-    if (index < size) {
-        return filter[index];
-    }
-    return trash;
 }

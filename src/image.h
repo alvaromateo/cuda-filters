@@ -32,51 +32,68 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 // Includes
 #include "tools.h"
+#include <algorithm>
 
 
 /*
  * Class Matrix that stores a 2D array of uchars. It is used to create the
  * filter and the different color frames of the images.
  */
+template < typename T >
 class Matrix {
 	private:
-		uchar *matrix;
+		T *matrix;
 		uint width;
 		uint height;
-		// this uchar is the one that we return when we subscript an index out
+		// this T is the one that we return when we subscript an index out
 		// of bounds because of the filter position. Thanks to this we won't have
 		// to take care of this problem.
-		uchar trash;
+		T trash;
 
-		void copyMatrix(const uchar *matrix, uchar *mat);
+		void swap(Matrix<T>& a, Matrix<T>& b) {
+			using std::swap;
+		    swap(a.matrix, b.matrix);
+		    swap(a.width, b.width);
+		    swap(a.height, b.height);
+		    swap(a.trash, b.trash);
+		}
+		void copyMatrix(const T *matrix, T *mat) {
+			for (uint i = 0; i < (this->width * this->height); ++i) {
+				mat[i] = matrix[i];
+			}
+		}
 
 	public:
 		Matrix() : matrix(0), width(0), height(0), trash(0) {}
-		Matrix(const uchar *matrix, uint w, uint h);
-		Matrix(const Matrix &matrix);
-		~Matrix();
-		uchar &operator[](int index);
+		Matrix(const T *matrix, uint w, uint h) : matrix(0), width(0), height(0), trash(0) {
+			this->matrix = new T[width * height];
+			copyMatrix(matrix, this->matrix);
+		}
+		Matrix(const Matrix<T> &matrix) : matrix(0), width(0), height(0), trash(0) {
+			this->width = matrix.width;
+			this->height = matrix.height;
+		    this->trash = 0;
+			this->matrix = new T[this->width * this->height];
+			copyMatrix(matrix.matrix, this->matrix);
+		}
+		inline ~Matrix() { delete[] matrix; }
+		inline Matrix<T> &operator=(Matrix<T> m) {
+			swap(*this, m);
+			return *this;
+		}
+		// Matrix &operator=(Matrix &&m);
+		inline T &operator[](int index) {
+			if (index < (width * height) && index >= 0) {
+		        return this->matrix[index];
+		    }
+		    return trash;
+		}
 		// Matrix ops
 		inline uint getWidth() const { return width; }
 		inline uint getHeight() const { return height; }
-		inline uchar *getMatrix() const { return matrix; }
-		void setMatrix(const uchar *matrix);
-};
+		inline T *getMatrix() const { return matrix; }
+		void setMatrix(const T *matrix) { copyMatrix(matrix, this->matrix); }
 
-
-class Filter {
-	private:
-		float *filter;
-		uint size;
-		float trash;
-
-	public:
-		Filter() {}
-		Filter(uchar filterType);
-		// Filter ops
-		float &operator[](int index);
-		inline float *getFilter() const { return filter; }
-		inline uint getSize() const { return size; }
 };
 
 
@@ -86,22 +103,22 @@ class Filter {
  */
 class Image {
 	private:
-		std::vector<Matrix> img;
+		std::vector<Matrix<uchar> > img;
 		int bitDepth;
 		int width;
 		int height;
 
 		// bool greyscale;
 		std::string imageName;
-		std::vector<Matrix> loadImageFromDisk(const std::string &imageName);
+		std::vector<Matrix<uchar> > loadImageFromDisk(const std::string &imageName);
 
 	public:
-		Image() : img() {}
+		Image() {}
 		Image(const std::string &imageName); // Throws exception std::invalid_argument
 		Image(const Image &otherImage);
-		Matrix &operator[](uint index);
+		Matrix<uchar> &operator[](uint index);
 		// Getters and setters
-		inline std::vector<Matrix> &getImg() { return img; }
+		inline std::vector<Matrix<uchar> > &getImg() { return img; }
 		inline int getWidth() { return width; }
 		inline int getHeight() { return height; }
 		void setImage(const std::string &imageName); // Throws exception std::invalid_argument

@@ -53,6 +53,7 @@ int main(int argc, char **argv) {
 	
 	Kernel kernel(clp);
 	kernel.applyFilter();
+	kernel.saveImages();
 	
 }
 
