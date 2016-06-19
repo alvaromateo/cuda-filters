@@ -172,6 +172,7 @@ Filter Kernel::initFilter() {
  * filter has a fixed size.
  */
 void Kernel::sequentialExec(const Filter &f, Image &image) {
+	std::cerr << "Hola" << std::endl;
 	// Initialize the values
 	float *filter = f.getFilter();
 	Image output(image);

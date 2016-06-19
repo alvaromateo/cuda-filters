@@ -84,6 +84,7 @@ CommandLineParser::CommandLineParser(int &argc, char **&argv) {
 		}
 		++i;
 	}
+
 	// user must input at least one image
 	if (images.empty()) {
 		doHelp(); // exit the program showing the usage

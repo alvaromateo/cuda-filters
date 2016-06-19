@@ -83,7 +83,7 @@ class CommandLineParser {
 
 	public:
 		CommandLineParser(int &argc, char **&argv);
-		inline std::vector<std::string> getImages() const { return images; }
+		inline const std::vector<std::string> &getImages() const { return images; }
 		inline const std::map<std::string, unsigned short> &getOptions() const { return opts; }
 
 	private:
