@@ -48,6 +48,8 @@ class Matrix {
 		// to take care of this problem.
 		uchar trash;
 
+		void copyMatrix(const uchar *matrix, uchar *mat);
+
 	public:
 		Matrix() : matrix(0), width(0), height(0), trash(0) {}
 		Matrix(const uchar *matrix, uint w, uint h);
@@ -95,8 +97,13 @@ class Filter {
 class Image {
 	private:
 		std::vector<Matrix> img;
+		int bitDepth;
+		int width;
+		int height;
+
 		// bool greyscale;
 		std::string imageName;
+		std::vector<Matrix> loadImageFromDisk(const std::string &imageName);
 
 	public:
 		Image() : img() {}

@@ -10,7 +10,7 @@ BUILDDIR = ./build/
 
 
 EXEFILTERS  = filters.exe
-OBJFILTERS  = mainFilters.o tools.o test.o
+OBJFILTERS  = mainFilters.o tools.o test.o image.o kernel.o
 OBJINCLUDES = $(addprefix $(BUILDDIR),$(OBJFILTERS))
 
 

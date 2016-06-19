@@ -45,27 +45,27 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
   * Constructor that creates a matrix stored in the heap with the given width
   * and height.
   */
-Matrix::Matrix(const uchar *matrix, uint w, uint h) : matrix(nullptr), width(w), height(h), trash(0) {
-	this.matrix = new uchar[width * height];
-	copyMatrix(matrix, this.matrix);
+Matrix::Matrix(const uchar *matrix, uint w, uint h) : matrix(0), width(w), height(h), trash(0) {
+	this->matrix = new uchar[width * height];
+	copyMatrix(matrix, this->matrix);
 }
 
 /*
  * Copy constructor.
  */
 Matrix::Matrix(const Matrix &matrix) {
-	this.width = matrix.width;
-	this.height = matrix.height;
-    this.trash = 0;
-	this.matrix = new uchar[this.width * this.height];
-	copyMatrix(matrix.matrix, this.matrix);
+	this->width = matrix.width;
+	this->height = matrix.height;
+    this->trash = 0;
+	this->matrix = new uchar[this->width * this->height];
+	copyMatrix(matrix.matrix, this->matrix);
 }
 
 /*
  * Destructor to free memory.
  */
 Matrix::~Matrix() {
-	delete [] this.matrix;
+	delete[] this->matrix;
 }
 
 /*
@@ -74,7 +74,7 @@ Matrix::~Matrix() {
  */
 uchar &Matrix::operator[](int index) {
     if (index < (width * height) && index >= 0) {
-        return this.matrix[index];
+        return this->matrix[index];
     }
     return trash;
 }
@@ -83,7 +83,7 @@ uchar &Matrix::operator[](int index) {
  * Method to copy another matrix. matrix has to have the same size of this.matrix.
  */
 void Matrix::setMatrix(const uchar *matrix) {
-    copyMatrix(matrix, this.matrix);
+    copyMatrix(matrix, this->matrix);
 }
 
 
@@ -95,8 +95,8 @@ void Matrix::setMatrix(const uchar *matrix) {
 /*
  * Method that copies an array.
  */
-void Matrix::copyMatrix(const uchar *matrix, uchar &mat) {
-	for (uint i = 0; i < (this.width * this.height); ++i) {
+void Matrix::copyMatrix(const uchar *matrix, uchar *mat) {
+	for (uint i = 0; i < (this->width * this->height); ++i) {
 		mat[i] = matrix[i];
 	}
 }
@@ -112,16 +112,16 @@ void Matrix::copyMatrix(const uchar *matrix, uchar &mat) {
   * the file system.
   */
 Image::Image(const std::string &imageName) {
-    this.imageName = imageName;
-	this.img = loadImageFromdisk(imageName, this.width, this.height);
+    this->imageName = imageName;
+	this->img = loadImageFromDisk(imageName);
 }
 
 /*
  * Copy constructor
  */
 Image::Image(const Image &otherImage) {
-    this.imageName = otherImage.imageName;
-    this.img = std::vector<Matrix> (3);
+    this->imageName = otherImage.imageName;
+    this->img = std::vector<Matrix> (3);
     for (int i = 0; i < otherImage.img.size(); ++i) {
         Matrix mat(otherImage.img[i]);
         img[i] = mat;
@@ -140,7 +140,7 @@ Image::Image(const Image &otherImage) {
  */
 Matrix &Image::operator[](uint index) {
     if (index < 3) {
-        return this.img[index];
+        return this->img[index];
     }
     // if someone is trying to access an invalid element we return the red color
     // channel
@@ -151,8 +151,8 @@ Matrix &Image::operator[](uint index) {
  * Set a new image for this object from a file named imageName.
  */
 void Image::setImage(const std::string &imageName) {
-    this.imageName = imageName;
-	this.img = loadImageFromdisk(imageName, this.width, this.height);
+    this->imageName = imageName;
+	this->img = loadImageFromDisk(imageName);
 }
 
 /*
@@ -161,9 +161,8 @@ void Image::setImage(const std::string &imageName) {
  * 
  * return: a vector with 3 matrix objects, one for each color channel of an image.
  */
-std::vector<Matrix> Image::loadImageFromDisk(const std::string &image, uint &width, uint &height) {
-	int bitDepth;
-    unsigned char* image = stbi_load(imageName.c_str(), &width, &height, &bitDepth, 3);
+std::vector<Matrix> Image::loadImageFromDisk(const std::string &imageName) {
+    uchar* image = stbi_load(imageName.c_str(), &width, &height, &bitDepth, 3);
 
     // Check for invalid input
     if (image == NULL) {
@@ -172,7 +171,7 @@ std::vector<Matrix> Image::loadImageFromDisk(const std::string &image, uint &wid
 
     //Separate the channels
     int len = width * height;
-    unsigned char red[len], green[len], blue[len];
+    uchar red[len], green[len], blue[len];
     for (int i = 0, j = 0; i < 3*len; i += 3, ++j){
         red[j]   = image[i];
         green[j] = image[i+1];
@@ -180,12 +179,12 @@ std::vector<Matrix> Image::loadImageFromDisk(const std::string &image, uint &wid
     }
 
     std::vector<Matrix> img(3);
-    Matrix red(red, width, height);
-    Matrix green(green, width, height);
-    Matrix blue(blue, width, height);
-    img[0] = red;
-    img[1] = green;
-    img[2] = blue;
+    Matrix redMat(red, width, height);
+    Matrix greenMat(green, width, height);
+    Matrix blueMat(blue, width, height);
+    img[0] = redMat;
+    img[1] = greenMat;
+    img[2] = blueMat;
 
     return img;
 }
@@ -199,7 +198,15 @@ void Image::saveImageToDisk() {
 	//Write the image to disk appending "_filter" to its name
     imageName = imageName.substr(0, imageName.length()-4);
     imageName += "_filter.png";
-    stbi_write_png(imageName.c_str(), width, height, bitDepth, image, width*3);
+    int len = width * height;
+    uchar *image = new uchar[len];
+    for (int i = 0, j = 0; i < 3*len; i += 3, ++j) {
+        image[i] = img[0][j];
+        image[i+1] = img[1][j];
+        image[i+2] = img[2][j];
+    }
+    stbi_write_png(imageName.c_str(), width, height, bitDepth, &image[0], width*3);
+    delete[] image;
 }
 
 
@@ -210,36 +217,36 @@ void Image::saveImageToDisk() {
 Filter::Filter(uchar filterType) {
     switch (filterType) {
         case 0:
-            this.filter = &filter_avg3[0];
-            this.size = 3;
+            this->filter = &filter_avg3[0];
+            this->size = 3;
             break;
         case 1:
-            this.filter = &filter_avg5[0];
-            this.size = 5;
+            this->filter = &filter_avg5[0];
+            this->size = 5;
             break;
         case 2:
-            this.filter = &filter_sharpenWeak[0];
-            this.size = 3;
+            this->filter = &filter_sharpenWeak[0];
+            this->size = 3;
             break;
         case 3:
-            this.filter = &filter_sharpenStrong[0];
-            this.size = 3;
+            this->filter = &filter_sharpenStrong[0];
+            this->size = 3;
             break;
         case 4:
-            this.filter = &filter_gaussian3[0];
-            this.size = 3;
+            this->filter = &filter_gaussian3[0];
+            this->size = 3;
             break;
         case 5:
-            this.filter = &filter_gaussian5[0];
-            this.size = 5;
+            this->filter = &filter_gaussian5[0];
+            this->size = 5;
             break;
         case 6:
-            this.filter = &filter_edgeDetection[0];
-            this.size = 3;
+            this->filter = &filter_edgeDetection[0];
+            this->size = 3;
             break;
         case 7:
-            this.filter = &filter_embossing[0];
-            this.size = 3;
+            this->filter = &filter_embossing[0];
+            this->size = 3;
             break;
     }
 }

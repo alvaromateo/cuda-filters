@@ -133,6 +133,10 @@ void Kernel::applyFilter() {
 	}
 }
 
+void Kernel::saveImages() {
+
+}
+
 
 /**
  * Kernel private methods
@@ -273,5 +277,21 @@ void Kernel::multiCardSynExec(const uchar *filter, uchar *image, unsigned int im
 }
 
 void Kernel::multiCardAsynExec(const uchar *filter, uchar *image, unsigned int imageSize) {
+
+}
+
+void Kernel::getPinnedMemory() {
+
+}
+
+void Kernel::getMemory() {
+
+}
+
+void Kernel::freePinnedMemory() {
+
+}
+
+void Kernel::freeMemory() {
 
 }
