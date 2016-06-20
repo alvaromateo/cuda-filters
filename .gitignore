@@ -8,3 +8,4 @@
 *.exe
 build/
 images/
+cuda-filters.*
