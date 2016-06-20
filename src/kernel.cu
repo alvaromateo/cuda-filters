@@ -335,6 +335,12 @@ void Kernel::singleCardSynExec(const Matrix<float> &filter, Image &image) {
 
 	uint numBytesImage = image.getWidth() * image.getHeight() * sizeof(uchar);
 	uint numBytesFilter = filter.getWidth() * filter.getHeight() * sizeof(float);
+	std::cerr << "numBytesImage = " << numBytesImage << std::endl;
+	std::cerr << "numBytesFilter = " << numBytesFilter << std::endl;
+	std::cerr << "nBlocksX = " << nBlocksX << std::endl;
+	std::cerr << "nBlocksY = " << nBlocksY << std::endl;
+	std::cerr << "Image Width = " << image.getWidth() << std::endl;
+	std::cerr << "Image Height = " << image.getHeight() << std::endl;
 
 	dim3 dimGrid(nBlocksX, nBlocksY, 1);
 	dim3 dimBlock(nThreads, nThreads, 1);
