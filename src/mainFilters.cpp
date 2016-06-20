@@ -31,10 +31,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "test.h"
 #include "kernel.h"
 
-using namespace std;
-
-// Change DEBUG to 0 to disable debugging
-#define DEBUG 1
 
 void myterminate () {
 	std::cerr << "An error occurred during execution. Exiting program...\n";

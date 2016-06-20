@@ -63,14 +63,6 @@ class Kernel {
 		void singleCardAsynExec(const Matrix<float> &f, Image &image);
 		void multiCardSynExec(const Matrix<float> &f, Image &image);
 		void multiCardAsynExec(const Matrix<float> &f, Image &image);
-		
-		// private methods for allocating memory
-		void getPinnedMemory();
-		void getMemory();
-		
-		// private methods to free memory
-		void freePinnedMemory();
-		void freeMemory();
 
 	public:
 		Kernel() : executionType(sequential), nThreads(THREADS), pinned(false) {}

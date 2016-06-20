@@ -23,7 +23,7 @@ $(BUILDDIR)%.o: %.cpp
 	$(NVCC) $(NVCC_FLAGS) $(PROG_FLAGS) -c -o $@ $<
 
 $(EXEFILTERS): $(OBJINCLUDES) ./build/kernel.o
-	$(NVCC) $^ -o $(EXEFILTERS) $(LD_FLAGS)
+	$(NVCC) $^ -o $(EXEFILTERS) $(LD_FLAGS) -g
 
 
 all:	$(EXEFILTERS) 

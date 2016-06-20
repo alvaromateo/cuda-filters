@@ -6,3 +6,5 @@
 *.fatbin
 *.o
 *.exe
+build/
+images/

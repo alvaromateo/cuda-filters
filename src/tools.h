@@ -42,9 +42,12 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <cstdlib>
 
 
+// Change DEBUG to 0 to disable debugging
+#define DEBUG 1
+
 #define DEFAULT_FILTER_TYPE 0
-#define THREADS 32
-#define MAX_THREAD_NUMBER 1024
+#define THREADS 8
+#define MAX_THREAD_NUMBER 32
 
 
 typedef unsigned short ushort;

@@ -35,6 +35,10 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <algorithm>
 
 
+// activate to debug memory leaks
+#define DEBUG_COPY 0
+
+
 /*
  * Class Matrix that stores a 2D array of uchars. It is used to create the
  * filter and the different color frames of the images.
@@ -50,7 +54,7 @@ class Matrix {
 		// to take care of this problem.
 		T trash;
 
-		void swap(Matrix<T>& a, Matrix<T>& b) {
+		friend void swap(Matrix<T>& a, Matrix<T>& b) {
 			using std::swap;
 		    swap(a.matrix, b.matrix);
 		    swap(a.width, b.width);
@@ -65,19 +69,29 @@ class Matrix {
 
 	public:
 		Matrix() : matrix(0), width(0), height(0), trash(0) {}
-		Matrix(const T *matrix, uint w, uint h) : matrix(0), width(0), height(0), trash(0) {
+		Matrix(const T *mat, uint w, uint h) : matrix(0), width(w), height(h), trash(0) {
 			this->matrix = new T[width * height];
-			copyMatrix(matrix, this->matrix);
+			copyMatrix(mat, this->matrix);
 		}
-		Matrix(const Matrix<T> &matrix) : matrix(0), width(0), height(0), trash(0) {
+		Matrix(const Matrix<T> &matrix) : matrix(0), width(matrix.width), height(matrix.height), trash(0) {
 			this->width = matrix.width;
 			this->height = matrix.height;
 		    this->trash = 0;
 			this->matrix = new T[this->width * this->height];
 			copyMatrix(matrix.matrix, this->matrix);
+#if DEBUG_COPY
+			std::cerr << "copy constructor. width: " << width << std::endl;
+#endif
 		}
-		inline ~Matrix() { delete[] matrix; }
+		inline ~Matrix() { 
+#if DEBUG_COPY
+			std::cerr << "delete. width: " << width << std::endl;
+#endif
+			delete[] matrix; }
 		inline Matrix<T> &operator=(Matrix<T> m) {
+#if DEBUG_COPY
+			std::cerr << "copy. width: " << width << std::endl;
+#endif
 			swap(*this, m);
 			return *this;
 		}
@@ -108,7 +122,9 @@ class Image {
 		int width;
 		int height;
 
-		// bool greyscale;
+		// Trash
+		Matrix<uchar> trash;
+
 		std::string imageName;
 		std::vector<Matrix<uchar> > loadImageFromDisk(const std::string &imageName);
 
@@ -117,6 +133,7 @@ class Image {
 		Image(const std::string &imageName); // Throws exception std::invalid_argument
 		Image(const Image &otherImage);
 		Matrix<uchar> &operator[](uint index);
+		//inline Image &operator=(Image m) {}
 		// Getters and setters
 		inline std::vector<Matrix<uchar> > &getImg() { return img; }
 		inline int getWidth() { return width; }

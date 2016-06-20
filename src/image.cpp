@@ -48,12 +48,15 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 Image::Image(const std::string &imageName) : width(0), height(0), bitDepth(0) {
     this->imageName = imageName;
 	this->img = loadImageFromDisk(imageName);
+#if DEBUG
+    std::cerr << "Image::Image width: " << width << std::endl;
+#endif
 }
 
 /*
  * Copy constructor
  */
-Image::Image(const Image &otherImage) : width(0), height(0), bitDepth(0) {
+Image::Image(const Image &otherImage) : width(otherImage.width), height(otherImage.height), bitDepth(otherImage.bitDepth) {
     this->imageName = otherImage.imageName;
     this->img = std::vector<Matrix<uchar> > (3);
     for (int i = 0; i < otherImage.img.size(); ++i) {
@@ -78,7 +81,7 @@ Matrix<uchar> &Image::operator[](uint index) {
     }
     // if someone is trying to access an invalid element we return the red color
     // channel
-    return img[0];
+    return trash;
 }
 
 /*
@@ -121,6 +124,10 @@ std::vector<Matrix<uchar> > Image::loadImageFromDisk(const std::string &imageNam
     img.push_back(blueMat);
     std::free(image);
 
+#if DEBUG
+    std::cerr << "Image::loadImageFromDisk width: " << width << std::endl;
+#endif
+
     return img;
 }
 
@@ -134,7 +141,10 @@ void Image::saveImageToDisk() {
     imageName = imageName.substr(0, imageName.length()-4);
     imageName += "_filter.png";
     int len = width * height;
-    uchar *image = new uchar[len];
+#if DEBUG
+    std::cerr << "Image::saveImageToDisk. len: " << len << std::endl;
+#endif
+    uchar *image = new uchar[len*3];
     for (int i = 0, j = 0; i < 3*len; i += 3, ++j) {
         image[i] = img[0][j];
         image[i+1] = img[1][j];

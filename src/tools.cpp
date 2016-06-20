@@ -275,7 +275,7 @@ void CommandLineParser::doHelp() {
 	help << "Options can be:" << std::endl;
 	help << "	--filter f 	where f is one of the following filter types:" << std::endl;
 	help << "					avg3 (default), avg5, sharpenWeak, sharpenStrong, gaussian3, gaussian5, edgeDetection, embossing" << std::endl;
-	help << "	--show|-s	if set, the modified images are opened when the program finishes" << std::endl;
+	// help << "	--show|-s	if set, the modified images are opened when the program finishes" << std::endl;
 	help << "	--pinned|-p 	if set, the program will use pinned memory" << std::endl;
 	help << "	--exec e 	where e is one of the following execution types:" << std::endl;
 	help << "					sequential, singleCardSyn, singleCardAsyn, multiCardSyn, multiCardAsyn" << std::endl;
