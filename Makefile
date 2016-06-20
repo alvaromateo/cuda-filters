@@ -31,3 +31,6 @@ all:	$(EXEFILTERS)
 clean:
 	rm -rf build/*.o *.exe
 
+clean-output:
+	rm -rf cuda-filters.* .test
+
