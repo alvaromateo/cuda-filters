@@ -380,7 +380,9 @@ void Kernel::singleCardSynExec(const Matrix<float> &filter, Image &image) {
 	copyMatrix(image[1].getMatrix(), iGreen_H, numBytesImage);
 	copyMatrix(image[2].getMatrix(), iBlue_H, numBytesImage);
 
-	recordEvent(E0);
+	//recordEvent(E0);
+	cudaEventRecord(E0, 0);
+	cudaEventSynchronize(E0);
 
 	// Get memory in device
 	// filter
@@ -400,14 +402,18 @@ void Kernel::singleCardSynExec(const Matrix<float> &filter, Image &image) {
 	cudaMemcpy(iGreen, iRed_H, numBytesImage, cudaMemcpyHostToDevice);
 	cudaMemcpy(iBlue, iRed_H, numBytesImage, cudaMemcpyHostToDevice);
 
-	recordEvent(E1);
+	//recordEvent(E1);
+	cudaEventRecord(E1, 0);
+	cudaEventSynchronize(E1);
 
 	// Execute the kernel
 	kernel<<<dimGrid, dimBlock>>>(filter.getWidth(), filter.getWidth() / 2, image.getWidth(), image.getHeight(), f, iRed, iModRed);
 	kernel<<<dimGrid, dimBlock>>>(filter.getWidth(), filter.getWidth() / 2, image.getWidth(), image.getHeight(), f, iGreen, iModGreen);
 	kernel<<<dimGrid, dimBlock>>>(filter.getWidth(), filter.getWidth() / 2, image.getWidth(), image.getHeight(), f, iBlue, iModBlue);
 
-	recordEvent(E2);
+	//recordEvent(E2);
+	cudaEventRecord(E2, 0);
+	cudaEventSynchronize(E2);
 
 	// Get the result to the host 
 	cudaMemcpy(iModRed_H, iModRed, numBytesImage, cudaMemcpyDeviceToHost); 
@@ -428,7 +434,9 @@ void Kernel::singleCardSynExec(const Matrix<float> &filter, Image &image) {
 	cudaFree(iModGreen);
 	cudaFree(iModBlue);
 
-	recordEvent(E3);
+	//recordEvent(E3);
+	cudaEventRecord(E3, 0);
+	cudaEventSynchronize(E3);
 
 	cudaEventElapsedTime(&TiempoTotal,  E0, E3);
 	cudaEventElapsedTime(&TiempoKernel, E1, E2);
