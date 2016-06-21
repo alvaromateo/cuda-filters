@@ -35,20 +35,47 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <string>
 #include <iostream>
 #include <exception>
+#include <stdexcept>
 #include <cstdio>
 #include <utility>
 #include <sstream>
+#include <cstdlib>
 
 
-#define DEFAULT_FILTER_SIZE 5
+// Change DEBUG to 0 to disable debugging
+#define DEBUG 1
+
 #define DEFAULT_FILTER_TYPE 0
+#define THREADS 8
+#define MAX_THREAD_NUMBER 32
 
-typedef std::vector<float> VECTOR;
-typedef std::vector< VECTOR > MATRIX;
+
+typedef unsigned short ushort;
+typedef unsigned char uchar;
+typedef unsigned int uint;
 
 enum FilterType {
-	blur,
-	sharpen
+	avg3,
+	avg5,
+	sharpenWeak,
+	sharpenStrong,
+	gaussian3,
+	gaussian5,
+	edgeDetection,
+	embossing
+};
+
+enum ExecutionType {
+	sequential,
+	singleCardSyn,
+	singleCardAsyn,
+	multiCardSyn,
+	multiCardAsyn
+};
+
+enum Color {
+	rgb,
+	grayscale
 };
 
 /**
@@ -59,8 +86,8 @@ class CommandLineParser {
 
 	public:
 		CommandLineParser(int &argc, char **&argv);
-		inline const std::vector<std::string> &loadImages() const { return images; }
-		unsigned short getFilterSize();
+		inline const std::vector<std::string> &getImages() const { return images; }
+		inline const std::map<std::string, unsigned short> &getOptions() const { return opts; }
 
 	private:
 		std::vector<std::string> images;
@@ -73,14 +100,6 @@ class CommandLineParser {
 		bool isValid(std::string &key, int *index);
 		bool isImage(const char *const &argument);
 		void doHelp();
-};
-
-/**
- * Common operations for matrixes
- */
-class MatrixOperations {
-	public:
-		static void initFilter(MATRIX &filter);
 };
 
 #endif

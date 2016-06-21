@@ -41,8 +41,8 @@ void CommandLineParserTest::doTest() {
 
 void CommandLineParserTest::printImages() {
 	std::cout << "Images: " << std::endl;
-	std::vector<std::string>::const_iterator it = clp->loadImages().begin();
-	for ( ; it != clp->loadImages().end(); ++it) {
+	std::vector<std::string>::const_iterator it = clp->getImages().begin();
+	for ( ; it != clp->getImages().end(); ++it) {
 		std::cout << *it << std::endl;
 	}
 }
