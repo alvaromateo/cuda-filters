@@ -30,7 +30,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "tools.h"
 
 #include <stdexcept>
-#include <cstdlib>
 #include <climits>
 #include <cerrno>
 
@@ -55,6 +54,14 @@ unsigned short my_stoul (const char *str, size_t *idx = 0, int base = 10) {
 }
 
 /**
+ * Function to check if a number is a power of 2 or not.
+ */
+inline bool is_power_of_2(const unsigned short &n) {
+	return (n & (n - 1)) == 0;
+}
+
+
+/**
  * CommandLineParser public methods
  */
 
@@ -77,6 +84,7 @@ CommandLineParser::CommandLineParser(int &argc, char **&argv) {
 		}
 		++i;
 	}
+
 	// user must input at least one image
 	if (images.empty()) {
 		doHelp(); // exit the program showing the usage
@@ -95,18 +103,6 @@ CommandLineParser::CommandLineParser(int &argc, char **&argv) {
 	}
 }
 
-/**
- * return: the filter size specified in the command line arguments or the default one
- */
-unsigned short CommandLineParser::getFilterSize() {
-	unsigned int size = DEFAULT_FILTER_SIZE;
-	std::map<std::string, unsigned short>::const_iterator it = opts.find("size");
-	if (it != opts.end()) {
-		size = it->second;
-	}
-	return size;
-}
-
 
 /**
  * CommandLineParser private methods
@@ -118,9 +114,12 @@ unsigned short CommandLineParser::getFilterSize() {
  * the default options.
  */
 void CommandLineParser::initOptions() {
-	opts.insert(std::pair<std::string, unsigned short> (std::string("size"), DEFAULT_FILTER_SIZE));
-	opts.insert(std::pair<std::string, unsigned short> (std::string("type"), DEFAULT_FILTER_TYPE));
+	opts.insert(std::pair<std::string, unsigned short> (std::string("filter"), DEFAULT_FILTER_TYPE));
 	opts.insert(std::pair<std::string, unsigned short> (std::string("show"), 0));
+	opts.insert(std::pair<std::string, unsigned short> (std::string("threads"), THREADS));
+	opts.insert(std::pair<std::string, unsigned short> (std::string("exec"), sequential));
+	opts.insert(std::pair<std::string, unsigned short> (std::string("pinned"), 0));
+	opts.insert(std::pair<std::string, unsigned short> (std::string("color"), rgb));
 }
 
 /**
@@ -153,24 +152,18 @@ std::string CommandLineParser::getOptionKey(const char *const &argument, int *in
  */
 unsigned short CommandLineParser::getOptionValue(const char *const &argument, const std::string &key) {
 	unsigned short value = 0;
-	if (key == "show" || key == "s") {
+	if (key == "show" || key == "pinned") {
 		value = 1;
-	} else if (key == "size") {
-		// the size can only be odd values bigger than 3
+	} else if (key == "threads") {
 		try {
 			value = my_stoul(argument);
 		} catch (std::exception &e) {
 			doHelp();
 		}
-		// if the number is not odd we substract 1
-		if (value > 2) {
-			if (!(value % 2)) {
-				--value;
-			}
-		} else {
+		if ((value > MAX_THREAD_NUMBER) && !is_power_of_2(value)) {
 			doHelp();
 		}
-	} else if (key == "type") {
+	} else if (key == "filter" || key == "color" || key == "exec") {
 		// transform the string into a number with transformTypeToInt
 		value = transformTypeToInt(std::string(argument));
 	} else {
@@ -188,10 +181,36 @@ unsigned short CommandLineParser::getOptionValue(const char *const &argument, co
 unsigned short CommandLineParser::transformTypeToInt(const std::string &type) {
 	unsigned short typeNum = 0;
 	// Add different filter types here and in the tools.h enum
-	if (!type.compare("blur")) {
-		typeNum = blur;
-	} else if (!type.compare("sharpen")) {
-		typeNum = sharpen;
+	if (!type.compare("avg3")) {
+		typeNum = avg3;
+	} else if (!type.compare("avg5")) {
+		typeNum = avg5;
+	} else if (!type.compare("sharpenWeak")) {
+		typeNum = sharpenWeak;
+	} else if (!type.compare("sharpenStrong")) {
+		typeNum = sharpenStrong;
+	} else if (!type.compare("gaussian3")) {
+		typeNum = gaussian3;
+	} else if (!type.compare("gaussian5")) {
+		typeNum = gaussian5;
+	} else if (!type.compare("edgeDetection")) {
+		typeNum = edgeDetection;
+	} else if (!type.compare("embossing")) {
+		typeNum = embossing;
+	} else if (!type.compare("rgb")) {
+		typeNum = rgb;
+	} else if (!type.compare("grayscale")) {
+		typeNum = grayscale;
+	} else if (!type.compare("sequential")) {
+		typeNum = sequential;
+	} else if (!type.compare("singleCardSyn")) {
+		typeNum = singleCardSyn;
+	} else if (!type.compare("singleCardAsyn")) {
+		typeNum = singleCardAsyn;
+	} else if (!type.compare("multiCardSyn")) {
+		typeNum = multiCardSyn;
+	} else if (!type.compare("multiCardAsyn")) {
+		typeNum = multiCardAsyn;
 	} else {
 		doHelp(); // type not valid. Show usage and exit the program
 	}
@@ -209,7 +228,7 @@ unsigned short CommandLineParser::transformTypeToInt(const std::string &type) {
 bool CommandLineParser::isValid(std::string &key, int *index) {
 	bool valid = false;
 	if (!key.empty()) {
-		if (key == "size" || key == "type") {
+		if (key == "filter" || key == "threads" || key == "exec" || key == "color") {
 			valid = true;
 			++(*index); // increment index to check for the value
 		} else if (key == "show") {
@@ -220,6 +239,11 @@ bool CommandLineParser::isValid(std::string &key, int *index) {
 			// set valid to true and change key to show to avoid saving "show" and
 			// "s" options, which are the same
 			key = "show";
+			valid = true;
+		} else if (key == "pinned") {
+			valid = true;
+		} else if (key == "p") {
+			key = "pinned";
 			valid = true;
 		}
 	}
@@ -249,22 +273,19 @@ void CommandLineParser::doHelp() {
 	std::ostringstream help;
 	help << "Usage: cudafilters.exe image.png [image2.png image3.png ...] options" << std::endl;
 	help << "Options can be:" << std::endl;
-	help << "	--size x		where x is an odd number bigger than 2" << std::endl;
-	help << "	--type s 		where s is one of the following filter types:" << std::endl;
-	help << "						blur, sharpen" << std::endl;
-	help << "	--show|-s		if set the modified images are opened when the program finishes" << std::endl;
+	help << "	--filter f 	where f is one of the following filter types:" << std::endl;
+	help << "					avg3 (default), avg5, sharpenWeak, sharpenStrong, gaussian3, gaussian5, edgeDetection, embossing" << std::endl;
+	// help << "	--show|-s	if set, the modified images are opened when the program finishes" << std::endl;
+	help << "	--pinned|-p 	if set, the program will use pinned memory" << std::endl;
+	help << "	--exec e 	where e is one of the following execution types:" << std::endl;
+	help << "					sequential, singleCardSyn, singleCardAsyn, multiCardSyn, multiCardAsyn" << std::endl;
+	// color option not working in this version
+	help << "	--threads t where t is an integer number power of 2 and not greater than " << MAX_THREAD_NUMBER <<
+		" specifying the number of threads in each dimension" << std::endl;
+	help << "Pinned memory is mandatory in case of asyncronous execution" << std::endl;
 	help << "Currently supported images formats: .png";
 	help.flush();
 	std::cout << help.str() << std::endl;
 	std::exit(1);
 }
 
-
-/**
- * MatrixOperations public methods
- */
-
-
-void MatrixOperations::initFilter(MATRIX &filter) {
-	// stub
-}
