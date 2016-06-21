@@ -6,6 +6,7 @@
 *.fatbin
 *.o
 *.exe
+*.txt
 build/
 images/
 cuda-filters.*

@@ -123,6 +123,15 @@ void recordEvent(cudaEvent_t &E) {
 	cudaEventSynchronize(E);
 }
 
+void CheckCudaError(char sms[], int line) {
+	cudaError_t error;
+	error = cudaGetLastError();
+	if (error) {
+		printf("(ERROR) %s - %s in %s at line %d\n", sms, cudaGetErrorString(error), __FILE__, line);
+		exit(EXIT_FAILURE);
+	}
+}
+
 template < typename U >
 void copyMatrix(const U *matrix, U *mat, uint len) {
 	for (uint i = 0; i < len; ++i) {
@@ -335,12 +344,15 @@ void Kernel::singleCardSynExec(const Matrix<float> &filter, Image &image) {
 
 	uint numBytesImage = image.getWidth() * image.getHeight() * sizeof(uchar);
 	uint numBytesFilter = filter.getWidth() * filter.getHeight() * sizeof(float);
+
+#if DEBUG
 	std::cerr << "numBytesImage = " << numBytesImage << std::endl;
 	std::cerr << "numBytesFilter = " << numBytesFilter << std::endl;
 	std::cerr << "nBlocksX = " << nBlocksX << std::endl;
 	std::cerr << "nBlocksY = " << nBlocksY << std::endl;
 	std::cerr << "Image Width = " << image.getWidth() << std::endl;
 	std::cerr << "Image Height = " << image.getHeight() << std::endl;
+#endif
 
 	dim3 dimGrid(nBlocksX, nBlocksY, 1);
 	dim3 dimBlock(nThreads, nThreads, 1);
@@ -387,14 +399,21 @@ void Kernel::singleCardSynExec(const Matrix<float> &filter, Image &image) {
 	// Get memory in device
 	// filter
 	cudaMalloc((float**)&f, numBytesFilter); 
+	CheckCudaError((char *) "Obtener Memoria en el device", __LINE__);
 	// image
 	cudaMalloc((uchar**)&iRed, numBytesImage); 
+	CheckCudaError((char *) "Obtener Memoria en el device", __LINE__);
 	cudaMalloc((uchar**)&iGreen, numBytesImage); 
+	CheckCudaError((char *) "Obtener Memoria en el device", __LINE__);
 	cudaMalloc((uchar**)&iBlue, numBytesImage); 
+	CheckCudaError((char *) "Obtener Memoria en el device", __LINE__);
 	// modified image
 	cudaMalloc((uchar**)&iModRed, numBytesImage); 
+	CheckCudaError((char *) "Obtener Memoria en el device", __LINE__);
 	cudaMalloc((uchar**)&iModGreen, numBytesImage); 
+	CheckCudaError((char *) "Obtener Memoria en el device", __LINE__);
 	cudaMalloc((uchar**)&iModBlue, numBytesImage); 
+	CheckCudaError((char *) "Obtener Memoria en el device", __LINE__);
 
 	// Copy data from host to device 
 	cudaMemcpy(f, f_H, numBytesFilter, cudaMemcpyHostToDevice);
