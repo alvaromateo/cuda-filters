@@ -32,7 +32,31 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 // Includes
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 
+// Defines
+#define FILTER 0
+#define PINNED 0
+#define THREADS 8
+#define MAX_THREADS 32
+
+
+// Typedefs
+typedef unsigned int uint;
+typedef unsigned short ushort;
+typedef unsigned char uchar;
+
+
+// Methods
 void doHelp();
+char *getValidImage(const char *argument);
+char getOptionKey(const char *argument);
+
+// Call getOptions  to fetch the image name and initialize the rest of parameters
+char *getOptions(int argc, char **argv, uchar *filter, uchar *threads, uchar *pinned);
+
+
+
+#endif
