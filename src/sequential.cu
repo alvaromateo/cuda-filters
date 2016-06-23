@@ -29,7 +29,10 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 // Includes
 #include <math.h>
-#include "readCommandLine.h"
+
+extern "C" {
+	#include "readCommandLine.h"
+}
 
 #define STB_IMAGE_IMPLEMENTATION
 #define STB_IMAGE_WRITE_IMPLEMENTATION
@@ -48,58 +51,90 @@ float edgeDetection[9] = {0,1,0,1,-4,1,0,1,0}; //Normalize result by adding 128 
 float embossing[9] = {-2,-1,0,-1,1,1,0,1,2};
 
 // Filter array
-float **arrayFilter = {avg3, avg5, sharpenWeak, sharpenStrong, gaussian3, gaussian5, edgeDetection, embossing};
+float *arrayFilter[] = {&avg3[0], &avg5[0], &sharpenWeak[0], &sharpenStrong[0], &gaussian3[0], &gaussian5[0], &edgeDetection[0], &embossing[0]};
+
+// Methods
+uchar getFiltersize(uchar filterType) {
+	uchar filterSize = 3;
+	switch (filterType) {
+		case 1:
+		case 5:
+			filterSize = 5;
+			break;
+	}
+	return filterSize;
+}
 
 
 int main(int argc, char **argv) {
 	// Initialize options
-	uchar filterType, threads;
-	bool pinned;
+	uchar filterType, threads, pinned;
     char *imageName = getOptions(argc, argv, &filterType, &threads, &pinned);
 
-	uint width, height, bitDepth;
-	uchar *image = stbi_load(imageName, &width, &height, &bitDepth, 3);
+	int width, height, bitDepth;
+	uchar *image = stbi_load(imageName, &width, &height, &bitDepth, 0);
 
     // Check for invalid input
-    if( image == NULL ) {
+    if ( image == NULL ) {
         printf("Could not open or find the image\n");
         return -1;
     }
+    // bitDepth has the number of channels: 1 for grayscale and 3 for RGB
+    // TODO: check number of channels to apply the filter correctly if the image is in grayscale
 
 	//Separate the channels
 	uint len = width * height;
 	uchar red[len], green[len], blue[len];
+	uchar redOut[len], greenOut[len], blueOut[len];
 	uint i, j;
-	for(i=0, j=0; i<3*len; i+=3, j++){
+
+	for (i = 0, j = 0; i < 3*len; i += 3, j++){
 		red[j]   = image[i];
 		green[j] = image[i+1];
 		blue[j]  = image[i+2];
 	}
 
-	//Apply filter
+	// Get filter
 	float *filter = arrayFilter[filterType];
-	for(i=1; i < height-1; i++){
-		for(j=1; j < width-1; j++){
-			red[i*width+j] = red[(i-1)*width+(j-1)]*gauss[0] + red[(i-1)*width+(j)]*gauss[1] + red[(i-1)*width+(j+1)]*gauss[2] + red[i*width+(j-1)]*gauss[3] + red[i*width+j]*gauss[4] + red[i*width+(j+1)]*gauss[5] + red[(i+1)*width+(j-1)]*gauss[6] + red[(i+1)*width+j]*gauss[7] + red[(i+1)*width+(j+1)]*gauss[8];
-			green[i*width+j] = green[(i-1)*width+(j-1)]*gauss[0] + green[(i-1)*width+(j)]*gauss[1] + green[(i-1)*width+(j+1)]*gauss[2] + green[i*width+(j-1)]*gauss[3] + green[i*width+j]*gauss[4] + green[i*width+(j+1)]*gauss[5] + green[(i+1)*width+(j-1)]*gauss[6] + green[(i+1)*width+j]*gauss[7] + green[(i+1)*width+(j+1)]*gauss[8];
-			blue[i*width+j] = blue[(i-1)*width+(j-1)]*gauss[0] + blue[(i-1)*width+(j)]*gauss[1] + blue[(i-1)*width+(j+1)]*gauss[2] + blue[i*width+(j-1)]*gauss[3] + blue[i*width+j]*gauss[4] + blue[i*width+(j+1)]*gauss[5] + blue[(i+1)*width+(j-1)]*gauss[6] + blue[(i+1)*width+j]*gauss[7] + blue[(i+1)*width+(j+1)]*gauss[8];
+	uint filterX, filterY, filterSize;
+	// Initialize filterSize
+    filterSize = getFiltersize(filterType);
+
+    // Apply filter
+    uchar padding = filterSize >> 1; // Divide by 2
+	for (i = padding; i < height - padding; i++) {
+		for j = padding; j < width - padding; j++) {
+			double redPixel=0.0, greenPixel=0.0, bluePixel=0.0;
+			for (filterY = 0; filterY < filterSize; filterY++) {
+				for (filterX=0; filterX < filterSize; filterX++) {
+					uint imageX = (i - padding + filterX);
+					uint imageY = (j - padding + filterY);
+					redPixel += red[imageX * width + imageY] * filter[filterY * filterSize + filterX];
+					greenPixel += green[imageX * width + imageY] * filter[filterY * filterSize + filterX];
+					bluePixel += blue[imageX * width + imageY] * filter[filterY * filterSize + filterX];
+				}
+			}
+			redPixel = (redPixel < 0) ? 0 : ((redPixel > 255) ? 255 : redPixel);
+			greenPixel = (greenPixel < 0) ? 0 : ((greenPixel > 255) ? 255 : greenPixel);
+			bluePixel = (bluePixel < 0) ? 0 : ((bluePixel > 255) ? 255 : bluePixel);
+			redOut[i * width + j] = redPixel;
+			greenOut[i * width + j] = greenPixel;
+			blueOut[i * width + j] = bluePixel;
 		}
 	}
 
 
-	for(i=0, j=0; i<3*len; i+=3, j++){
-		image[i] = red[j];
-		image[i+1] = green[j];
-		image[i+2] = blue[j];
+	for (i = 0, j = 0; i < 3*len; i += 3, j++) {
+		image[i] = redOut[j];
+		image[i+1] = greenOut[j];
+		image[i+2] = blueOut[j];
 	}
 
 	//Write the image to disk appending "_filter" to its name
-	char newImageName[] = "\0";
-	strncpy(newImageName, imageName, strlen(imageName)-4);
-//	printf(" %d\n",strlen(newImageName));
-	strcat(newImageName, "_filter.png");
-//	printf("%s\n",newImageName);
-	stbi_write_png(newImageName, width, height, bitDepth, image, width*3);
+	char newImageName[NAME_SIZE] = "\0";
+	strncpy(newImageName, imageName, strlen(imageName) - 4);
+	strncat(newImageName, "_filter.png", NAME_SIZE - strlen(newImageName) - 1);
+	stbi_write_png(newImageName, width, height, bitDepth, image, width * 3);
 
     return 0;
 }

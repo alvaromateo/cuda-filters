@@ -1,36 +1,39 @@
 CUDA_HOME   = /Soft/cuda/7.5.18
 
 NVCC        = $(CUDA_HOME)/bin/nvcc
-NVCC_FLAGS  = -O3 -I$(CUDA_HOME)/include -arch=compute_35 --ptxas-options=-v -I$(CUDA_HOME)/sdk/CUDALibraries/common/inc
-LD_FLAGS    = -lcudart -Xlinker -rpath,$(CUDA_HOME)/lib64 -I$(CUDA_HOME)/sdk/CUDALibraries/common/lib
-PROG_FLAGS  = -DSIZE=32
+NVCC_FLAGS  = -O3 -I$(CUDA_HOME)/include -arch=compute_35 --ptxas-options=-v -I$(CUDA_HOME)/sdk/CUDALibraries/common/inc -rdc=true
+LD_FLAGS    = -lcudadevrt -Xlinker -rpath,$(CUDA_HOME)/lib64 -I$(CUDA_HOME)/sdk/CUDALibraries/common/lib
+PROG_FLAGS  = -DSIZE=32 -lm
 
 VPATH = src/
 BUILDDIR = ./build/
+FILTER = filter-
+DEPS = stb_image.h stb_image_write.h readCommandLine.h
 
 
-EXEFILTERS  = filters.exe
-OBJFILTERS  = mainFilters.o tools.o test.o image.o
+EXEFILTERS  = sequential singleCardAsyn singleCardSyn multiCardAsyn multiCardSyn
+OBJFILTERS  = sequential.o singleCardAsyn.o singleCardSyn.o multiCardAsyn.o multiCardSyn.o
 OBJINCLUDES = $(addprefix $(BUILDDIR),$(OBJFILTERS))
+EXES = $(addsuffix .exe, $(EXEFILTERS))
 
 
-default: $(EXEFILTERS)
+all: $(EXES)
 
-$(BUILDDIR)%.o: %.cpp
+$(BUILDDIR)%.o: %.cu $(DEPS)
 	$(NVCC) $(NVCC_FLAGS) $(PROG_FLAGS) -c -o $@ $<
 
-./build/kernel.o: kernel.cu
+./build/readCommandLine.o: readCommandLine.c
 	$(NVCC) $(NVCC_FLAGS) $(PROG_FLAGS) -c -o $@ $<
 
-$(EXEFILTERS): $(OBJINCLUDES) ./build/kernel.o
-	$(NVCC) $^ -o $(EXEFILTERS) $(LD_FLAGS) -g
-
-
-all:	$(EXEFILTERS) 
+$(EXES): %.exe: $(BUILDDIR)%.o ./build/readCommandLine.o
+	$(NVCC) -o $@ $< build/readCommandLine.o $(LD_FLAGS) 
 
 clean:
 	rm -rf build/*.o *.exe
 
 clean-output:
 	rm -rf cuda-filters.* .test
+
+$(BUILDDIR):
+	mkdir $(BUILDDIR)
 

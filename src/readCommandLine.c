@@ -31,7 +31,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "readCommandLine.h"
 
 
-static const char *defaultImage = "lena.png";
+static char *defaultImage = "images/lena.png";
 
 
 /*
@@ -64,7 +64,7 @@ void doHelp() {
  *
  * return: the char array with the valid image or NULL if the argument wasn't a valid one
  */
-char *getValidImage(const char *argument) {
+char *getValidImage(char *argument) {
 	char *lastOccurrence = strstr(argument, ".png");
 	if (lastOccurrence) {
 		return argument;
@@ -82,14 +82,14 @@ char *getValidImage(const char *argument) {
 char *getOptions(int argc, char **argv, uchar *filter, uchar *threads, uchar *pinned) {
 	char *imageName;
 	// Default values
-	*imageName = defaultImage;
+	imageName = defaultImage;
 	*filter = FILTER;
 	*threads = THREADS;
 	*pinned = PINNED;
 
 	if (argc > 1) {
 		uchar i = 1; // first argv parameter is the program name
-		if (*imageName = getValidImage(argv[i])) {
+		if (imageName = getValidImage(argv[i])) {
 			++i;
 		} 
 
@@ -117,6 +117,7 @@ char *getOptions(int argc, char **argv, uchar *filter, uchar *threads, uchar *pi
 	return imageName;
 }
 
+
 /*
  * This method receives an argv[i] parameter and checks it is a valid option
  * for the program. If it is then the parameter is transformed to a char.
@@ -133,4 +134,19 @@ char getOptionKey(const char *argument) {
 	}
 	// If the above conditions are not true print help and exit
 	doHelp();
+}
+
+/*
+ * This method checks that the key is valid (is one of 'f', 'p' or 't').
+ *
+ * return: 0 if key no valid and 1 if key valid
+ */
+uchar isValidKey(char key) {
+	switch (key) {
+		case 'f':
+		case 'p':
+		case 't':
+			return 1;
+	}
+	return 0;
 }

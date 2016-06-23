@@ -37,6 +37,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 
 // Defines
+#define NAME_SIZE 64
 #define FILTER 0
 #define PINNED 0
 #define THREADS 8
@@ -51,7 +52,8 @@ typedef unsigned char uchar;
 
 // Methods
 void doHelp();
-char *getValidImage(const char *argument);
+char *getValidImage(char *argument);
+uchar isValidKey(char key);
 char getOptionKey(const char *argument);
 
 // Call getOptions  to fetch the image name and initialize the rest of parameters
