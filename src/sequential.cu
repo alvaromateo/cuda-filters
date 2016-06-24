@@ -22,6 +22,11 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
+
+extern "C" {
+	#include "readCommandLine.h"
+}
+
 #define STB_IMAGE_IMPLEMENTATION
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb_image.h"
@@ -36,69 +41,97 @@ float gaussian3[9] = {1./16, 2./16, 1./16, 2./16, 4./16, 2./16, 1./16, 2./16, 1.
 float edgeDetection[9] = {0,1,0,1,-4,1,0,1,0}; //Normalize result by adding 128 to all elements
 float embossing[9] = {-2,-1,0,-1,1,1,0,1,2};
 
+// Filter array
+float *arrayFilter[] = {&avg3[0], &avg5[0], &sharpenWeak[0], &sharpenStrong[0], &gaussian3[0], &gaussian5[0], &edgeDetection[0], &embossing[0]};
+
+// Methods
+uchar getFiltersize(uchar filterType) {
+	uchar filterSize = 3;
+	switch (filterType) {
+		case 1:
+		case 5:
+			filterSize = 5;
+			break;
+	}
+	return filterSize;
+}
+
 
 int main(int argc, char **argv) {
-	char imageName[] = "lena.png"; // by default
-    if( argc > 1) {
-       // imageName = argv[1];
-    }
+	// Initialize options
+	uchar filterType, threads, pinned;
+    char *imageName = getOptions(argc, argv, &filterType, &threads, &pinned);
 
 	int width, height, bitDepth;
-	unsigned char* image = stbi_load(imageName, &width, &height, &bitDepth, 3);
+	uchar *image = stbi_load(imageName, &width, &height, &bitDepth, 0);
 
     // Check for invalid input
-    if( image == NULL ) {
+    if ( image == NULL ) {
         printf("Could not open or find the image\n");
         return -1;
     }
-	//Separate the channels
-	int len = width * height;
-	unsigned char red[len], green[len], blue[len];
-	unsigned char redOut[len], greenOut[len], blueOut[len];
-	int i, j;
-	for(i=0, j=0; i<3*len; i+=3, j++){
-		red[j]   = image[i];
-		green[j] = image[i+1];
-		blue[j]  = image[i+2];
-	}
 
-	//Apply filter
-	int filterX, filterY, filterSize=3;
-	for(i=1; i < height-1; i++){
-		for(j=1; j < width-1; j++){
-			double redPixel=0.0, greenPixel=0.0, bluePixel=0.0;
-			for(filterY=0; filterY<3; filterY++){
-				for(filterX=0; filterX<3; filterX++){
-					int imageX = (i - filterSize/2 + filterX);
-					int imageY = (j - filterSize/2 + filterY);
-					redPixel += red[imageX*width + imageY] * embossing[filterY * filterSize + filterX];
-					greenPixel += green[imageX*width + imageY] * embossing[filterY * filterSize + filterX];
-					bluePixel += blue[imageX*width + imageY] * embossing[filterY * filterSize + filterX];
-				}
-			}
-			redPixel = (redPixel<0) ? 0 : ((redPixel>255) ? 255 : redPixel);
-			greenPixel = (greenPixel<0) ? 0 : ((greenPixel>255) ? 255 : greenPixel);
-			bluePixel = (bluePixel<0) ? 0 : ((bluePixel>255) ? 255 : bluePixel);
-			redOut[i*width+j] = redPixel;
-			greenOut[i*width+j] = greenPixel;
-			blueOut[i*width+j] = bluePixel;
+    uint color = !(bitDepth % 2) ? (bitDepth - 1) : bitDepth; // with this we ignore the alpha channel
+
+    // bitDepth has the number of channels: 1 for grayscale and 3 for RGB
+    uchar **channels = (uchar **) malloc(bitDepth * sizeof(uchar *));
+    uchar **output = (uchar **) malloc(bitDepth * sizeof(uchar *));
+    
+	//Separate the channels
+	uint i, j, x;
+	uint len = width * height;
+	for (x = 0; x < color; ++x) {
+		channels[x] = (uchar *) malloc(len * sizeof(uchar));
+		output[x] = (uchar *) malloc(len * sizeof(uchar));
+	}
+	
+	for (i = 0, j = 0; i < bitDepth*len; i += bitDepth, ++j){
+		for (x = 0; x < color; ++x) { // we leave the alpha channel unchanged
+			(channels[x])[j] = image[i + x];
+			(output[x])[j] = image[i + x];
 		}
 	}
 
+	// Get filter
+	float *filter = arrayFilter[filterType];
+	uint filterX, filterY, filterSize;
+	// Initialize filterSize
+    filterSize = getFiltersize(filterType);
 
-	for(i=0, j=0; i<3*len; i+=3, j++){
-		image[i] = redOut[j];
-		image[i+1] = greenOut[j];
-		image[i+2] = blueOut[j];
+    // Apply filter
+    uchar padding = filterSize >> 1; // Divide by 2
+	for (i = padding; i < height - padding; ++i) {
+		for (j = padding; j < width - padding; ++j) {
+			float pixels[color]; // hold the values for each pixel depending on the image channels
+			memset(pixels, 0, sizeof(pixels));
+			for (filterX = 0; filterX < filterSize; ++filterX) {
+				for (filterY = 0; filterY < filterSize; ++filterY) {
+					uint imageX = (i - padding + filterX);
+					uint imageY = (j - padding + filterY);
+					for (x = 0; x < color; ++x) {
+						pixels[x] = ((float) ((channels[x])[imageX * width + imageY]) * (float) filter[filterX * filterSize + filterY]) + pixels[x];
+					}
+				}
+			}
+			for (x = 0; x < color; ++x) {
+				(output[x])[i * width + j] = (uchar) (pixels[x] < 0) ? 0 : ((pixels[x] > 255) ? 255 : pixels[x]);
+			}
+		}
+	}
+
+	for (i = 0, j = 0; i < bitDepth*len; i += bitDepth, ++j){
+		for (x = 0; x < color; ++x) { // we leave the alpha channel unchanged
+			image[i + x] = (output[x])[j];
+		}
 	}
 
 	//Write the image to disk appending "_filter" to its name
-	char newImageName[] = "\0";
-	strncpy(newImageName, imageName, strlen(imageName)-4);
-//	printf(" %d\n",strlen(newImageName));
-	strcat(newImageName, "_filter.png");
-//	printf("%s\n",newImageName);
-	stbi_write_png(newImageName, width, height, bitDepth, image, width*3);
+	char newImageName[NAME_SIZE] = "\0";
+	strncpy(newImageName, imageName, strlen(imageName) - 4);
+	// printf(" %d\n",strlen(newImageName));
+	strncat(newImageName, "_filter.png", NAME_SIZE - strlen(newImageName) - 1);
+	// printf("%s\n",newImageName);
+	stbi_write_png(newImageName, width, height, bitDepth, image, width * bitDepth);
 
     return 0;
 }
