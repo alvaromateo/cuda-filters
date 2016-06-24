@@ -128,9 +128,7 @@ int main(int argc, char **argv) {
 	//Write the image to disk appending "_filter" to its name
 	char newImageName[NAME_SIZE] = "\0";
 	strncpy(newImageName, imageName, strlen(imageName) - 4);
-	// printf(" %d\n",strlen(newImageName));
 	strncat(newImageName, "_filter.png", NAME_SIZE - strlen(newImageName) - 1);
-	// printf("%s\n",newImageName);
 	stbi_write_png(newImageName, width, height, bitDepth, image, width * bitDepth);
 
     return 0;
