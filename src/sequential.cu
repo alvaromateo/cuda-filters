@@ -81,10 +81,6 @@ int main(int argc, char **argv) {
     }
 
     uint color = !(bitDepth % 2) ? (bitDepth - 1) : bitDepth; // with this we ignore the alpha channel
-    // printf("color = %u\n", color);
-    // printf("bitDepth = %i\n", bitDepth);
-    // printf("width = %i\n", width);
-    // printf("height = %i\n", height);
 
     // bitDepth has the number of channels: 1 for grayscale and 3 for RGB
     uchar **channels = (uchar **) malloc(bitDepth * sizeof(uchar *));
@@ -96,18 +92,12 @@ int main(int argc, char **argv) {
 	for (x = 0; x < color; ++x) {
 		channels[x] = (uchar *) malloc(len * sizeof(uchar));
 		output[x] = (uchar *) malloc(len * sizeof(uchar));
-		// printf("Pointer to &channel[%u]: %p\n", x, &channels[x]);
-		// printf("Pointer to channel[%u]: %p\n", x, channels[x]);
-		// printf("Pointer to output[%u]: %p\n", x, output[x]);
 	}
 	
 	for (i = 0, j = 0; i < bitDepth*len; i += bitDepth, ++j){
 		for (x = 0; x < color; ++x) { // we leave the alpha channel unchanged
 			(channels[x])[j] = image[i + x];
 			(output[x])[j] = image[i + x];
-			// printf("&(channels[%u])[%u] = %p\n", x, j, &((channels[x])[j]));
-			// printf("image[%u + %u] = %u\n", i, x, image[i + x]);
-			// printf("(channels[%u])[%u] = %u\n", x, j, (channels[x])[j]);
 		}
 	}
 
@@ -119,8 +109,6 @@ int main(int argc, char **argv) {
 
     // Apply filter
     uchar padding = filterSize >> 1; // Divide by 2
-    // printf("padding = %u\n", padding);
-    // printf("filterSize = %u\n", filterSize);
 	for (i = padding; i < height - padding; ++i) {
 		for (j = padding; j < width - padding; ++j) {
 			float pixels[color]; // hold the values for each pixel depending on the image channels
@@ -131,53 +119,20 @@ int main(int argc, char **argv) {
 					uint imageY = (j - padding + filterY);
 					for (x = 0; x < color; ++x) {
 						pixels[x] = ((float) ((channels[x])[imageX * width + imageY]) * (float) filter[filterX * filterSize + filterY]) + pixels[x];
-						// printf("imageX = %u\n", imageX);
-						// printf("imageY = %u\n", imageY);
-						// printf("pixels[%u] = %f * %f\n", x, (float)(channels[x])[imageX * width + imageY], filter[filterX * filterSize + filterY]);
-						// printf("pixels[%u] = %f\n", x, pixels[x]);
 					}
 				}
 			}
 			for (x = 0; x < color; ++x) {
-				// printf("pixels[%u] = %f\n", x, pixels[x]);
 				(output[x])[i * width + j] = (uchar) (pixels[x] < 0) ? 0 : ((pixels[x] > 255) ? 255 : pixels[x]);
-				// printf("\noutput[%u][%u] -> pixels[%u] = %u\n", i, j, x, (output[x])[i * width + j]);
-				// printf("image[%u][%u] = %u\n\n\n\n", i, j, (channels[x])[i * width + j]);
 			}
 		}
 	}
-
-	// Print before
-	/*
-	for (x = 0; x < bitDepth; ++x) {
-		printf("\n\n\n\n\n");
-		for (i = 0; i < width; ++i) {
-			for (j = 0; j < height; ++j) {
-				printf("%u\t", image[(i * width + j) * bitDepth + x]);
-			}
-			printf("\n");
-		}
-	}
-	*/
 
 	for (i = 0, j = 0; i < bitDepth*len; i += bitDepth, ++j){
 		for (x = 0; x < color; ++x) { // we leave the alpha channel unchanged
 			image[i + x] = (output[x])[j];
 		}
 	}
-
-	// Print after
-	/*
-	for (x = 0; x < bitDepth; ++x) {
-		printf("\n\n\n\n\n");
-		for (i = 0; i < width; ++i) {
-			for (j = 0; j < height; ++j) {
-				printf("%u\t", image[(i * width + j) * bitDepth + x]);
-			}
-			printf("\n");
-		}
-	}
-	*/
 
 	//Write the image to disk appending "_filter" to its name
 	char newImageName[NAME_SIZE] = "\0";
