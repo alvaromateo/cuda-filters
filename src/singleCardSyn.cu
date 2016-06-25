@@ -235,7 +235,7 @@ int main(int argc, char **argv) {
 	// Rejoin the channels to save the image
     for (i = 0, j = 0; i < bitDepth*len; i += bitDepth, ++j){
 		for (x = 0; x < color; ++x) { // we leave the alpha channel unchanged
-			image[i + x] = (output[x])[j];
+			image[i + x] = (channels[x])[j];
 		}
 	}
 
