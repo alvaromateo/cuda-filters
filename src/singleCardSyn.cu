@@ -86,7 +86,7 @@ int main(int argc, char **argv) {
 
 	// Pointers to variables in the host
     uchar **channels = (uchar **) malloc(color * sizeof(uchar *));
-    uchar **output = (uchar **) malloc(color * sizeof(uchar *));
+// ? uchar **output = (uchar **) malloc(color * sizeof(uchar *));
     // Pointers to variables in the device
     uchar **channelsDevice = (uchar **) malloc(color * sizeof(uchar *));
     uchar **outputDevice = (uchar **) malloc(color * sizeof(uchar *));
@@ -99,10 +99,10 @@ int main(int argc, char **argv) {
 	for (x = 0; x < color; ++x) {
 		if (pinned) {
 			cudaMallocHost((uchar **) &channels[x], numBytesImage);
-			cudaMallocHost((uchar **) &output[x], numBytesImage);
+// ?			cudaMallocHost((uchar **) &output[x], numBytesImage);
 		} else {
 			channels[x] = (uchar *) malloc(len * sizeof(uchar));
-			output[x] = (uchar *) malloc(len * sizeof(uchar));
+// ?			output[x] = (uchar *) malloc(len * sizeof(uchar));
 		}
 	}
 	
@@ -110,7 +110,7 @@ int main(int argc, char **argv) {
 	for (i = 0, j = 0; i < bitDepth*len; i += bitDepth, ++j){
 		for (x = 0; x < color; ++x) { // we leave the alpha channel unchanged
 			(channels[x])[j] = image[i + x];
-			(output[x])[j] = image[i + x];
+// ?			(output[x])[j] = image[i + x];
 		}
 	}
 
@@ -147,28 +147,24 @@ int main(int argc, char **argv) {
 	cudaEventRecord(E0, 0);
 	cudaEventSynchronize(E0);
 
-	// Get memory in device
+	// Get memory in device and send data
 	// Filter
 	cudaMalloc((float**) &filterDevice, numBytesFilter); 
+	cudaMemcpy(filterDevice, filter, numBytesFilter, cudaMemcpyHostToDevice);
 	// Image
-	cudaMalloc((uchar**)&iRed, numBytesImage); 
-	cudaMalloc((uchar**)&iGreen, numBytesImage); 
-	cudaMalloc((uchar**)&iBlue, numBytesImage); 
-	// Output image
-	cudaMalloc((uchar**)&iModRed, numBytesImage); 
-	cudaMalloc((uchar**)&iModGreen, numBytesImage); 
-	cudaMalloc((uchar**)&iModBlue, numBytesImage); 
-
-	// Copy data from host to device 
-	cudaMemcpy(f, f_H, numBytesFilter, cudaMemcpyHostToDevice);
-	cudaMemcpy(iRed, iRed_H, numBytesImage, cudaMemcpyHostToDevice);
-	cudaMemcpy(iGreen, iRed_H, numBytesImage, cudaMemcpyHostToDevice);
-	cudaMemcpy(iBlue, iRed_H, numBytesImage, cudaMemcpyHostToDevice);
+	for (x = 0; x < color; ++x) {
+		cudaMalloc((uchar **) &channelsDevice[x], numBytesImage);
+		cudaMalloc((uchar **) &outputDevice[x], numBytesImage);
+		cudaMemcpy(channelsDevice[x], channels[x], numBytesImage, cudaMemcpyHostToDevice);
+	}
 
 	cudaEventRecord(E1, 0);
 	cudaEventSynchronize(E1);
 
 	// Execute the kernel
+	for (x = 0; x < color; ++x) {
+		kernel<<<dimGrid, dimBlock>>>(width, )
+	}
 	kernel<<<dimGrid, dimBlock>>>(filter.getWidth(), filter.getWidth() / 2, image.getWidth(), image.getHeight(), f, iRed, iModRed);
 	kernel<<<dimGrid, dimBlock>>>(filter.getWidth(), filter.getWidth() / 2, image.getWidth(), image.getHeight(), f, iGreen, iModGreen);
 	kernel<<<dimGrid, dimBlock>>>(filter.getWidth(), filter.getWidth() / 2, image.getWidth(), image.getHeight(), f, iBlue, iModBlue);
