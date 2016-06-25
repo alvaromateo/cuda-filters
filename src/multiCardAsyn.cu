@@ -28,11 +28,3 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 
 // Includes
-#include <stdio.h>
-
-
-// Defines
-#define THREADS 8
-#define MAX_THREAD_NUMBER 32
-
-
