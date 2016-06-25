@@ -19,8 +19,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 ***************************************************************************
 */
 
-#include <stdio.h>
-#include <string.h>
+
+// Includes
 #include <math.h>
 
 extern "C" {
@@ -74,8 +74,8 @@ int main(int argc, char **argv) {
     uint color = !(bitDepth % 2) ? (bitDepth - 1) : bitDepth; // with this we ignore the alpha channel
 
     // bitDepth has the number of channels: 1 for grayscale and 3 for RGB
-    uchar **channels = (uchar **) malloc(bitDepth * sizeof(uchar *));
-    uchar **output = (uchar **) malloc(bitDepth * sizeof(uchar *));
+    uchar **channels = (uchar **) malloc(color * sizeof(uchar *));
+    uchar **output = (uchar **) malloc(color * sizeof(uchar *));
     
 	//Separate the channels
 	uint i, j, x;
@@ -125,7 +125,7 @@ int main(int argc, char **argv) {
 		}
 	}
 
-	//Write the image to disk appending "_filter" to its name
+	// Write the image to disk appending "_filter" to its name
 	char newImageName[NAME_SIZE] = "\0";
 	strncpy(newImageName, imageName, strlen(imageName) - 4);
 	strncat(newImageName, "_filter.png", NAME_SIZE - strlen(newImageName) - 1);
