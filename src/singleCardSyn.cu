@@ -62,6 +62,31 @@ uchar getFiltersize(uchar filterType) {
 	return filterSize;
 }
 
+void initFilter(float *filter, uint filterSize, uchar filterType) {
+	for (uint a = 0; a < filterSize; ++a) {
+		filter[a] = (arrayFilter[filterType])[a];
+	}
+}
+
+__global__ void kernel(int width, int height, int filterSize, float *filt, uchar *img, uchar *out) {
+	uint i = blockIdx.x * blockDim.x + threadIdx.x;
+	uint j = blockIdx.y * blockDim.y + threadIdx.y;
+	uint padding = filterSize / 2;
+	unsigned long int index = i * width + j;
+
+	if ((i > padding) && (j > padding) && (i < width - padding) && (j < height - padding)) {
+		float tmp = 0.0;
+		for (uint filterX = 0; filterX < filterSize; ++filterX) {
+			for (uint filterY = 0; filterY < filterSize; ++filterY) {
+				uint imageX = (i - padding + filterX);
+				uint imageY = (j - padding + filterY);
+				tmp += ((float) img[imageX * width + imageY] * (float) filt[filterX * filterSize + filterY]);
+			}
+		}
+		out[index] = (uchar) (tmp < 0) ? 0 : ((tmp > 255) ? 255 : tmp);
+	}
+}
+
 
 int main(int argc, char **argv) {
 	// Initialize options
@@ -86,7 +111,6 @@ int main(int argc, char **argv) {
 
 	// Pointers to variables in the host
     uchar **channels = (uchar **) malloc(color * sizeof(uchar *));
-// ? uchar **output = (uchar **) malloc(color * sizeof(uchar *));
     // Pointers to variables in the device
     uchar **channelsDevice = (uchar **) malloc(color * sizeof(uchar *));
     uchar **outputDevice = (uchar **) malloc(color * sizeof(uchar *));
@@ -99,10 +123,8 @@ int main(int argc, char **argv) {
 	for (x = 0; x < color; ++x) {
 		if (pinned) {
 			cudaMallocHost((uchar **) &channels[x], numBytesImage);
-// ?			cudaMallocHost((uchar **) &output[x], numBytesImage);
 		} else {
 			channels[x] = (uchar *) malloc(len * sizeof(uchar));
-// ?			output[x] = (uchar *) malloc(len * sizeof(uchar));
 		}
 	}
 	
@@ -110,7 +132,6 @@ int main(int argc, char **argv) {
 	for (i = 0, j = 0; i < bitDepth*len; i += bitDepth, ++j){
 		for (x = 0; x < color; ++x) { // we leave the alpha channel unchanged
 			(channels[x])[j] = image[i + x];
-// ?			(output[x])[j] = image[i + x];
 		}
 	}
 
@@ -125,8 +146,9 @@ int main(int argc, char **argv) {
 	if (pinned) {
 		cudaMallocHost((float **) &filter, numBytesFilter);
 	} else {
-		filter = arrayFilter[filterType];
+		filter = (float *) malloc(filterSize * sizeof(float));
 	}
+	initFilter(filter, filterSize, filterType);
 
     // Variables to calculate time spent in each job
 	float TiempoTotal, TiempoKernel;
@@ -163,34 +185,20 @@ int main(int argc, char **argv) {
 
 	// Execute the kernel
 	for (x = 0; x < color; ++x) {
-		kernel<<<dimGrid, dimBlock>>>(width, )
+		kernel<<<dimGrid, dimBlock>>>(width, height, filterSize, filterDevice, channelsDevice[x], outputDevice[x]);
 	}
-	kernel<<<dimGrid, dimBlock>>>(filter.getWidth(), filter.getWidth() / 2, image.getWidth(), image.getHeight(), f, iRed, iModRed);
-	kernel<<<dimGrid, dimBlock>>>(filter.getWidth(), filter.getWidth() / 2, image.getWidth(), image.getHeight(), f, iGreen, iModGreen);
-	kernel<<<dimGrid, dimBlock>>>(filter.getWidth(), filter.getWidth() / 2, image.getWidth(), image.getHeight(), f, iBlue, iModBlue);
-
+	
 	//recordEvent(E2);
 	cudaEventRecord(E2, 0);
 	cudaEventSynchronize(E2);
 
-	// Get the result to the host 
-	cudaMemcpy(iModRed_H, iModRed, numBytesImage, cudaMemcpyDeviceToHost); 
-	cudaMemcpy(iModGreen_H, iModGreen, numBytesImage, cudaMemcpyDeviceToHost);
-	cudaMemcpy(iModBlue_H, iModBlue, numBytesImage, cudaMemcpyDeviceToHost);
-
-	// Copy the result to image
-	image[0].setMatrix(iModRed_H);
-	image[1].setMatrix(iModGreen_H);
-	image[2].setMatrix(iModBlue_H);
-
-	// Free memory of the device 
-	cudaFree(f);
-	cudaFree(iRed);
-	cudaFree(iGreen);
-	cudaFree(iBlue);
-	cudaFree(iModRed);
-	cudaFree(iModGreen);
-	cudaFree(iModBlue);
+	// Get the result to the host and free memory
+	cudaFree(filterDevice);
+	for (x = 0; x < color; ++x) {
+		cudaMemcpy(channels[x], outputDevice[x], numBytesImage, cudaMemcpyDeviceToHost);
+		cudaFree(channelsDevice[x]);
+		cudaFree(outputDevice[x]);
+	}
 
 	//recordEvent(E3);
 	cudaEventRecord(E3, 0);
@@ -206,29 +214,32 @@ int main(int argc, char **argv) {
 	cudaEventDestroy(E2);
 	cudaEventDestroy(E3);
 
+	// Free memory of the host
 	if (pinned) {
-		cudaFreeHost(f_H);
-		cudaFreeHost(iRed_H);
-		cudaFreeHost(iGreen_H);
-		cudaFreeHost(iBlue_H);
-		cudaFreeHost(iModRed_H);
-		cudaFreeHost(iModGreen_H);
-		cudaFreeHost(iModBlue_H);
+		cudaFreeHost(filter);
 	} else {
-		free(f_H);
-		free(iRed_H);
-		free(iGreen_H);
-		free(iBlue_H);
-		free(iModRed_H);
-		free(iModGreen_H);
-		free(iModBlue_H);
+		free(filter);
+	}
+	for (x = 0; x < color; ++x) {
+		if (pinned) {
+			cudaFreeHost(channels[x]);
+		} else {
+			free(channels[x]);
+		}
 	}
 
 	/*
 	 * End kernel part!
 	 */
 
-    // Write the image to disk appending "_filter" to its name
+	// Rejoin the channels to save the image
+    for (i = 0, j = 0; i < bitDepth*len; i += bitDepth, ++j){
+		for (x = 0; x < color; ++x) { // we leave the alpha channel unchanged
+			image[i + x] = (output[x])[j];
+		}
+	}
+
+	// Write the image to disk appending "_filter" to its name
 	char newImageName[NAME_SIZE] = "\0";
 	strncpy(newImageName, imageName, strlen(imageName) - 4);
 	strncat(newImageName, "_filter.png", NAME_SIZE - strlen(newImageName) - 1);
