@@ -32,7 +32,7 @@ clean:
 	rm -rf build/*.o *.exe
 
 clean-output:
-	rm -rf cuda-filters.* .test
+	rm -rf cuda-filters.* *.test
 
 $(BUILDDIR):
 	mkdir $(BUILDDIR)
