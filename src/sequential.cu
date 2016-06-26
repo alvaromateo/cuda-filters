@@ -22,6 +22,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 // Includes
 #include <math.h>
+#include <time.h>
 
 extern "C" {
 	#include "readCommandLine.h"
@@ -98,6 +99,11 @@ int main(int argc, char **argv) {
 	// Initialize filterSize
     filterSize = getFiltersize(filterType);
 
+    // Clock to measure time of the execution
+    clock_t begin, end;
+	double time_spent;
+	begin = clock();
+
     // Apply filter
     uchar padding = filterSize >> 1; // Divide by 2
 	for (i = padding; i < height - padding; ++i) {
@@ -118,6 +124,12 @@ int main(int argc, char **argv) {
 			}
 		}
 	}
+
+	end = clock();
+	time_spent = (double)(end - begin) / CLOCKS_PER_SEC;
+
+	printf("Dimensiones: %dx%dx%d\n", width, height, color);
+	printf("Tiempo Global: %4.8f milseg\n", time_spent);
 
 	for (i = 0, j = 0; i < bitDepth*len; i += bitDepth, ++j){
 		for (x = 0; x < color; ++x) { // we leave the alpha channel unchanged

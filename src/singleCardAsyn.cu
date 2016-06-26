@@ -26,7 +26,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 */
 
-
 // Includes
 #include <math.h>
 
@@ -38,6 +37,7 @@ extern "C" {
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb_image.h"
 #include "stb_image_write.h"
+
 
 float avg3[9] = {1./9, 1./9, 1./9, 1./9, 1./9, 1./9, 1./9, 1./9, 1./9};
 float avg5[25] = {1./25, 1./25, 1./25, 1./25, 1./25, 1./25, 1./25, 1./25, 1./25, 1./25, 1./25, 1./25, 1./25, 1./25, 1./25, 1./25, 1./25, 1./25, 1./25, 1./25, 1./25, 1./25, 1./25, 1./25, 1./25};
@@ -63,12 +63,38 @@ uchar getFiltersize(uchar filterType) {
 	return filterSize;
 }
 
+void initFilter(float *filter, uint filterSize, uchar filterType) {
+	for (uint a = 0; a < filterSize; ++a) {
+		filter[a] = (arrayFilter[filterType])[a];
+	}
+}
+
+__global__ void kernel(int width, int height, int filterSize, float *filt, uchar *img, uchar *out) {
+	uint i = blockIdx.x * blockDim.x + threadIdx.x;
+	uint j = blockIdx.y * blockDim.y + threadIdx.y;
+	uint padding = filterSize / 2;
+	unsigned long int index = i * width + j;
+
+	if ((i >= padding) && (j >= padding) && (i < width - padding) && (j < height - padding)) {
+		float tmp = 0.0;
+		for (uint filterX = 0; filterX < filterSize; ++filterX) {
+			for (uint filterY = 0; filterY < filterSize; ++filterY) {
+				uint imageX = (i - padding + filterX);
+				uint imageY = (j - padding + filterY);
+				tmp += ((float) img[imageX * width + imageY] * (float) filt[filterX * filterSize + filterY]);
+			}
+		}
+		out[index] = (uchar) (tmp < 0) ? 0 : ((tmp > 255) ? 255 : tmp);
+	}
+}
+
 
 int main(int argc, char **argv) {
 	// Initialize options
 	uchar filterType, threads, pinned;
     char *imageName = getOptions(argc, argv, &filterType, &threads, &pinned);
 
+    // bitDepth has the number of channels: 1 for grayscale and 3 for RGB
 	int width, height, bitDepth;
 	uchar *image = stbi_load(imageName, &width, &height, &bitDepth, 0);
 
@@ -80,34 +106,140 @@ int main(int argc, char **argv) {
 
     uint color = !(bitDepth % 2) ? (bitDepth - 1) : bitDepth; // with this we ignore the alpha channel
 
-    // bitDepth has the number of channels: 1 for grayscale and 3 for RGB
+	/*
+	 * Start kernel part!
+	 */
+
+	// Pointers to variables in the host
     uchar **channels = (uchar **) malloc(color * sizeof(uchar *));
-    uchar **output = (uchar **) malloc(color * sizeof(uchar *));
+    // Pointers to variables in the device
+    uchar **channelsDevice = (uchar **) malloc(color * sizeof(uchar *));
+    uchar **outputDevice = (uchar **) malloc(color * sizeof(uchar *));
     
 	//Separate the channels
 	uint i, j, x;
 	uint len = width * height;
+	uint numBytesImage = len * sizeof(uchar);
+
 	for (x = 0; x < color; ++x) {
-		channels[x] = (uchar *) malloc(len * sizeof(uchar));
-		output[x] = (uchar *) malloc(len * sizeof(uchar));
+		// Only pinned memory allowed with streams
+		cudaMallocHost((uchar **) &channels[x], numBytesImage);	
 	}
 	
+	// Initialize matrixs
 	for (i = 0, j = 0; i < bitDepth*len; i += bitDepth, ++j){
 		for (x = 0; x < color; ++x) { // we leave the alpha channel unchanged
 			(channels[x])[j] = image[i + x];
-			(output[x])[j] = image[i + x];
 		}
 	}
 
 	// Get filter
-	float *filter = arrayFilter[filterType];
-	uint filterX, filterY, filterSize;
+	float *filter, *filterDevice;
+	uint filterSize, numBytesFilter;
+
 	// Initialize filterSize
     filterSize = getFiltersize(filterType);
+    numBytesFilter = filterSize * filterSize * sizeof(float);
 
-    // Apply filter
+    // Only pinned memory allowed
+	cudaMallocHost((float **) &filter, numBytesFilter);
+	initFilter(filter, filterSize * filterSize, filterType);
 
-    // Write the image to disk appending "_filter" to its name
+    // Variables to calculate time spent in each job
+	float TiempoTotal;
+	cudaEvent_t E0, E3;
+
+	// Number of blocks in each dimension 
+	uint nBlocksX = (width + threads - 1) / threads; 
+	uint nBlocksY = (height + threads - 1) / threads;
+
+	dim3 dimGrid(nBlocksX, nBlocksY, 1);
+	dim3 dimBlock(threads, threads, 1);
+
+	cudaEventCreate(&E0);
+	cudaEventCreate(&E3);
+
+	cudaEventRecord(E0, 0);
+	cudaEventSynchronize(E0);
+
+	// Initialize the streams -> one for each channel
+	// Initialize the memory in the device
+	cudaStream_t stream[color];
+	for (x = 0; x < color; x++) {
+    	cudaStreamCreate(&stream[x]);
+    	cudaMalloc((uchar **) &channelsDevice[x], numBytesImage);
+		cudaMalloc((uchar **) &outputDevice[x], numBytesImage);
+	}
+	cudaMalloc((float**) &filterDevice, numBytesFilter); 
+
+	// Send data
+	// Filter:  we don't use asynchronous memory because the filter is needed to execute all the different 
+	// 			kernels and we have to wait for it to be in the device
+	cudaMemcpy(filterDevice, filter, numBytesFilter, cudaMemcpyHostToDevice);
+
+	for (x = 0; x < color; ++x) {
+		cudaMemcpyAsync(channelsDevice[x], channels[x], numBytesImage, cudaMemcpyHostToDevice, stream[x]);
+		kernel<<<dimGrid, dimBlock, 0, stream[x]>>>(width, height, filterSize, filterDevice, channelsDevice[x], outputDevice[x]);
+		cudaMemcpyAsync(channels[x], outputDevice[x], numBytesImage, cudaMemcpyDeviceToHost, stream[x]);
+	}
+
+	// Get the result to the host and free memory
+	cudaFree(filterDevice);
+	for (x = 0; x < color; ++x) {
+		cudaFree(channelsDevice[x]);
+		cudaFree(outputDevice[x]);
+	}
+
+	//recordEvent(E3);
+	cudaEventRecord(E3, 0);
+	cudaEventSynchronize(E3);
+
+	// Print results
+	cudaEventElapsedTime(&TiempoTotal,  E0, E3);
+	printf("\nKERNEL:\n");
+	printf("Dimensiones: %dx%dx%d\n", width, height, color);
+	printf("nThreads: %dx%d (%d)\n", threads, threads, threads * threads);
+	printf("nBlocks: %dx%d (%d)\n", nBlocksX, nBlocksY, nBlocksX * nBlocksY);
+	printf("Usando Pinned Memory\n");
+	printf("Tiempo Global (02): %4.6f milseg\n", TiempoTotal);
+
+	cudaEventDestroy(E0);
+	cudaEventDestroy(E3);
+
+	for (x = 0; x < color; x++) {
+    	cudaStreamDestroy(stream[x]);
+	}
+
+	// Rejoin the channels to save the image
+    for (i = 0, j = 0; i < bitDepth*len; i += bitDepth, ++j){
+		for (x = 0; x < color; ++x) { // we leave the alpha channel unchanged
+			image[i + x] = (channels[x])[j];
+		}
+	}
+
+	// Free memory of the host
+	if (pinned) {
+		cudaFreeHost(filter);
+	} else {
+		free(filter);
+	}
+	for (x = 0; x < color; ++x) {
+		if (pinned) {
+			cudaFreeHost(channels[x]);
+		} else {
+			free(channels[x]);
+		}
+	}
+	free(channels);
+	free(channelsDevice);
+	free(outputDevice);
+
+	/*
+	 * End kernel part!
+	 */
+
+
+	// Write the image to disk appending "_filter" to its name
 	char newImageName[NAME_SIZE] = "\0";
 	strncpy(newImageName, imageName, strlen(imageName) - 4);
 	strncat(newImageName, "_filter.png", NAME_SIZE - strlen(newImageName) - 1);

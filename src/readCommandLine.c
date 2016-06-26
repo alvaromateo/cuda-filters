@@ -50,7 +50,7 @@ void doHelp() {
 	printf("						6 	edgeDetection\n");
 	printf("						7 	embossing\n");
 	printf("	-p				if set, the program will use pinned memory\n");
-	printf("	-t threads 		where t is an integer number power of 2 and not greater than %u\n", MAX_THREADS);
+	printf("	-t threads 		where t is an integer number not greater than %u\n", MAX_THREADS);
 	printf("Pinned memory is mandatory in case of asyncronous execution\n");
 	printf("Currently supported images formats: .png\n");
 	exit(1);
@@ -108,6 +108,7 @@ char *getOptions(int argc, char **argv, uchar *filter, uchar *threads, uchar *pi
 					++i; // add one to fetch the following value
 					if (i == argc) doHelp(); // if there is no parameter value we exit
 					*filter = atoi(argv[i]);
+					if (*filter > MAX_THREADS) doHelp();
 					break;
 			}
 			++i;

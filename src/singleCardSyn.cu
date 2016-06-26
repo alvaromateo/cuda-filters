@@ -206,6 +206,14 @@ int main(int argc, char **argv) {
 
 	cudaEventElapsedTime(&TiempoTotal,  E0, E3);
 	cudaEventElapsedTime(&TiempoKernel, E1, E2);
+	printf("\nKERNEL:\n");
+	printf("Dimensiones: %dx%dx%d\n", width, height, color);
+	printf("nThreads: %dx%d (%d)\n", threads, threads, threads * threads);
+	printf("nBlocks: %dx%d (%d)\n", nBlocksX, nBlocksY, nBlocksX * nBlocksY);
+	if (pinned) printf("Usando Pinned Memory\n");
+		else printf("NO usa Pinned Memory\n");
+	printf("Tiempo Global: %4.6f milseg\n", TiempoTotal);
+	printf("Tiempo Kernel: %4.6f milseg\n", TiempoKernel);
 
 	cudaEventDestroy(E0);
 	cudaEventDestroy(E1);
