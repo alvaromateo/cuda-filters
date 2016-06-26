@@ -74,14 +74,16 @@ __global__ void kernel(int width, int height, int filterSize, float *filt, uchar
 	uint padding = filterSize / 2;
 	unsigned long int index = i * width + j;
 
-	printf("Before the if. thread[%u][%u]\n", i, j);
-	if ((i > padding) && (j > padding) && (i < width - padding) && (j < height - padding)) {
+	//printf("Before the if. thread[%u][%u]\n", i, j);
+	if ((i >= padding) && (j >= padding) && (i < width - padding) && (j < height - padding)) {
+		printf("thread[%u][%u]\n", i, j);
 		float tmp = 0.0;
 		for (uint filterX = 0; filterX < filterSize; ++filterX) {
 			for (uint filterY = 0; filterY < filterSize; ++filterY) {
 				uint imageX = (i - padding + filterX);
 				uint imageY = (j - padding + filterY);
 				tmp += ((float) img[imageX * width + imageY] * (float) filt[filterX * filterSize + filterY]);
+				printf("tmp = %f * %f\n", (float) img[imageX * width + imageY], (float) filt[filterX * filterSize + filterY]);
 			}
 		}
 		out[index] = (uchar) (tmp < 0) ? 0 : ((tmp > 255) ? 255 : tmp);
@@ -190,7 +192,6 @@ int main(int argc, char **argv) {
 		kernel<<<dimGrid, dimBlock>>>(width, height, filterSize, filterDevice, channelsDevice[x], outputDevice[x]);
 		cudaDeviceSynchronize();
 	}
-	printf("After the kernel\n");
 	
 	//recordEvent(E2);
 	cudaEventRecord(E2, 0);
@@ -199,7 +200,20 @@ int main(int argc, char **argv) {
 	// Get the result to the host and free memory
 	cudaFree(filterDevice);
 	for (x = 0; x < color; ++x) {
+		// debug
+		for (i = 0; i < width; ++i) {
+			for (j = 0; j < height; ++j) {
+				printf("%u\t", (channels[x])[i * width + j]);
+			}
+			printf("\n");
+		}
 		cudaMemcpy(channels[x], outputDevice[x], numBytesImage, cudaMemcpyDeviceToHost);
+		for (i = 0; i < width; ++i) {
+			for (j = 0; j < height; ++j) {
+				printf("%u\t", (channels[x])[i * width + j]);
+			}
+			printf("\n");
+		}
 		cudaFree(channelsDevice[x]);
 		cudaFree(outputDevice[x]);
 	}
