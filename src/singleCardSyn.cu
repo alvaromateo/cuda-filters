@@ -74,6 +74,7 @@ __global__ void kernel(int width, int height, int filterSize, float *filt, uchar
 	uint padding = filterSize / 2;
 	unsigned long int index = i * width + j;
 
+	printf("Before the if. thread[%u][%u]\n", i, j);
 	if ((i > padding) && (j > padding) && (i < width - padding) && (j < height - padding)) {
 		float tmp = 0.0;
 		for (uint filterX = 0; filterX < filterSize; ++filterX) {
@@ -84,6 +85,7 @@ __global__ void kernel(int width, int height, int filterSize, float *filt, uchar
 			}
 		}
 		out[index] = (uchar) (tmp < 0) ? 0 : ((tmp > 255) ? 255 : tmp);
+		printf("I'm thread [%u][%u] and tmp = %f\n", i, j, tmp);
 	}
 }
 
@@ -186,7 +188,9 @@ int main(int argc, char **argv) {
 	// Execute the kernel
 	for (x = 0; x < color; ++x) {
 		kernel<<<dimGrid, dimBlock>>>(width, height, filterSize, filterDevice, channelsDevice[x], outputDevice[x]);
+		cudaDeviceSynchronize();
 	}
+	printf("After the kernel\n");
 	
 	//recordEvent(E2);
 	cudaEventRecord(E2, 0);
