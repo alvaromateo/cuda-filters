@@ -137,7 +137,7 @@ int main(int argc, char **argv) {
 
 	// Get filter
 	float *filter, *filterDevice;
-	uint filterX, filterY, filterSize, numBytesFilter;
+	uint filterSize, numBytesFilter;
 
 	// Initialize filterSize
     filterSize = getFiltersize(filterType);

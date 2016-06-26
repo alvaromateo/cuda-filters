@@ -11,5 +11,5 @@ export PATH=/Soft/cuda/7.5.18/bin:$PATH
 # Cambiar el shell
 #$ -S /bin/bash
 
-nvprof ./sequential.exe images/lena.png -f 6
+nvprof ./singleCardSyn.exe images/lena.png -f 6
 
