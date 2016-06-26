@@ -65,6 +65,7 @@ uchar getFiltersize(uchar filterType) {
 void initFilter(float *filter, uint filterSize, uchar filterType) {
 	for (uint a = 0; a < filterSize; ++a) {
 		filter[a] = (arrayFilter[filterType])[a];
+		printf("filter[%u] = %f\n", a, filter[a]);
 	}
 }
 
@@ -76,14 +77,13 @@ __global__ void kernel(int width, int height, int filterSize, float *filt, uchar
 
 	//printf("Before the if. thread[%u][%u]\n", i, j);
 	if ((i >= padding) && (j >= padding) && (i < width - padding) && (j < height - padding)) {
-		printf("thread[%u][%u]\n", i, j);
 		float tmp = 0.0;
 		for (uint filterX = 0; filterX < filterSize; ++filterX) {
 			for (uint filterY = 0; filterY < filterSize; ++filterY) {
 				uint imageX = (i - padding + filterX);
 				uint imageY = (j - padding + filterY);
 				tmp += ((float) img[imageX * width + imageY] * (float) filt[filterX * filterSize + filterY]);
-				printf("tmp = %f * %f\n", (float) img[imageX * width + imageY], (float) filt[filterX * filterSize + filterY]);
+				printf("thread[%u][%u]: tmp = %f * %f\n", i, j, (float) img[imageX * width + imageY], (float) filt[filterX * filterSize + filterY]);
 			}
 		}
 		out[index] = (uchar) (tmp < 0) ? 0 : ((tmp > 255) ? 255 : tmp);
@@ -150,9 +150,9 @@ int main(int argc, char **argv) {
 	if (pinned) {
 		cudaMallocHost((float **) &filter, numBytesFilter);
 	} else {
-		filter = (float *) malloc(filterSize * sizeof(float));
+		filter = (float *) malloc(numBytesFilter * sizeof(float));
 	}
-	initFilter(filter, filterSize, filterType);
+	initFilter(filter, filterSize * filterSize, filterType);
 
     // Variables to calculate time spent in each job
 	float TiempoTotal, TiempoKernel;
