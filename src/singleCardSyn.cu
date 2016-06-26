@@ -68,6 +68,15 @@ void initFilter(float *filter, uint filterSize, uchar filterType) {
 	}
 }
 
+void CheckCudaError(char sms[], int line) {
+	cudaError_t error;
+	error = cudaGetLastError();
+	if (error) {
+		printf("(ERROR) %s - %s in %s at line %d\n", sms, cudaGetErrorString(error), __FILE__, line);
+		exit(EXIT_FAILURE);
+	}
+}
+
 __global__ void kernel(int width, int height, int filterSize, float *filt, uchar *img, uchar *out) {
 	uint i = blockIdx.x * blockDim.x + threadIdx.x;
 	uint j = blockIdx.y * blockDim.y + threadIdx.y;
@@ -123,6 +132,7 @@ int main(int argc, char **argv) {
 	for (x = 0; x < color; ++x) {
 		if (pinned) {
 			cudaMallocHost((uchar **) &channels[x], numBytesImage);
+			CheckCudaError((char *) "Obtener Memoria en el host", __LINE__);
 		} else {
 			channels[x] = (uchar *) malloc(len * sizeof(uchar));
 		}
@@ -145,6 +155,7 @@ int main(int argc, char **argv) {
 
 	if (pinned) {
 		cudaMallocHost((float **) &filter, numBytesFilter);
+		CheckCudaError((char *) "Obtener Memoria en el host", __LINE__);
 	} else {
 		filter = (float *) malloc(filterSize * sizeof(float));
 	}
@@ -172,12 +183,17 @@ int main(int argc, char **argv) {
 	// Get memory in device and send data
 	// Filter
 	cudaMalloc((float**) &filterDevice, numBytesFilter); 
+	CheckCudaError((char *) "Obtener Memoria en el device", __LINE__);
 	cudaMemcpy(filterDevice, filter, numBytesFilter, cudaMemcpyHostToDevice);
+	CheckCudaError((char *) "Copiar Memoria en el device", __LINE__);
 	// Image
 	for (x = 0; x < color; ++x) {
 		cudaMalloc((uchar **) &channelsDevice[x], numBytesImage);
+		CheckCudaError((char *) "Obtener Memoria en el device", __LINE__);
 		cudaMalloc((uchar **) &outputDevice[x], numBytesImage);
+		CheckCudaError((char *) "Obtener Memoria en el device", __LINE__);
 		cudaMemcpy(channelsDevice[x], channels[x], numBytesImage, cudaMemcpyHostToDevice);
+		CheckCudaError((char *) "Copiar Memoria en el device", __LINE__);
 	}
 
 	cudaEventRecord(E1, 0);
@@ -187,6 +203,7 @@ int main(int argc, char **argv) {
 	for (x = 0; x < color; ++x) {
 		kernel<<<dimGrid, dimBlock>>>(width, height, filterSize, filterDevice, channelsDevice[x], outputDevice[x]);
 	}
+	printf("After the kernel\n");
 	
 	//recordEvent(E2);
 	cudaEventRecord(E2, 0);
@@ -194,10 +211,14 @@ int main(int argc, char **argv) {
 
 	// Get the result to the host and free memory
 	cudaFree(filterDevice);
+	CheckCudaError((char *) "Liberar Memoria en el device", __LINE__);
 	for (x = 0; x < color; ++x) {
 		cudaMemcpy(channels[x], outputDevice[x], numBytesImage, cudaMemcpyDeviceToHost);
+		CheckCudaError((char *) "Copiar Memoria en el host", __LINE__);
 		cudaFree(channelsDevice[x]);
+		CheckCudaError((char *) "Liberar Memoria en el device", __LINE__);
 		cudaFree(outputDevice[x]);
+		CheckCudaError((char *) "Liberar Memoria en el device", __LINE__);
 	}
 
 	//recordEvent(E3);
@@ -214,6 +235,13 @@ int main(int argc, char **argv) {
 	cudaEventDestroy(E2);
 	cudaEventDestroy(E3);
 
+	// Rejoin the channels to save the image
+    for (i = 0, j = 0; i < bitDepth*len; i += bitDepth, ++j){
+		for (x = 0; x < color; ++x) { // we leave the alpha channel unchanged
+			image[i + x] = (channels[x])[j];
+		}
+	}
+
 	// Free memory of the host
 	if (pinned) {
 		cudaFreeHost(filter);
@@ -227,17 +255,14 @@ int main(int argc, char **argv) {
 			free(channels[x]);
 		}
 	}
+	free(channels);
+	free(channelsDevice);
+	free(outputDevice);
 
 	/*
 	 * End kernel part!
 	 */
 
-	// Rejoin the channels to save the image
-    for (i = 0, j = 0; i < bitDepth*len; i += bitDepth, ++j){
-		for (x = 0; x < color; ++x) { // we leave the alpha channel unchanged
-			image[i + x] = (channels[x])[j];
-		}
-	}
 
 	// Write the image to disk appending "_filter" to its name
 	char newImageName[NAME_SIZE] = "\0";

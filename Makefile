@@ -20,13 +20,13 @@ EXES = $(addsuffix .exe, $(EXEFILTERS))
 all: $(EXES)
 
 $(BUILDDIR)%.o: %.cu $(DEPS)
-	$(NVCC) $(NVCC_FLAGS) $(PROG_FLAGS) -c -o $@ $<
+	$(NVCC) $(NVCC_FLAGS) $(PROG_FLAGS) -c -o $@ $< -g
 
 ./build/readCommandLine.o: readCommandLine.c
-	$(NVCC) $(NVCC_FLAGS) $(PROG_FLAGS) -c -o $@ $<
+	$(NVCC) $(NVCC_FLAGS) $(PROG_FLAGS) -c -o $@ $< -g
 
 $(EXES): %.exe: $(BUILDDIR)%.o ./build/readCommandLine.o
-	$(NVCC) -o $@ $< build/readCommandLine.o $(LD_FLAGS) 
+	$(NVCC) -o $@ $< build/readCommandLine.o $(LD_FLAGS) -g
 
 clean:
 	rm -rf build/*.o *.exe
