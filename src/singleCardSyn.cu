@@ -65,7 +65,15 @@ uchar getFiltersize(uchar filterType) {
 void initFilter(float *filter, uint filterSize, uchar filterType) {
 	for (uint a = 0; a < filterSize; ++a) {
 		filter[a] = (arrayFilter[filterType])[a];
-		printf("filter[%u] = %f\n", a, filter[a]);
+	}
+}
+
+void CheckCudaError(char sms[], int line) {
+	cudaError_t error;
+	error = cudaGetLastError();
+	if (error) {
+		printf("(ERROR) %s - %s in %s at line %d\n", sms, cudaGetErrorString(error), __FILE__, line);
+		exit(EXIT_FAILURE);
 	}
 }
 
@@ -75,7 +83,6 @@ __global__ void kernel(int width, int height, int filterSize, float *filt, uchar
 	uint padding = filterSize / 2;
 	unsigned long int index = i * width + j;
 
-	//printf("Before the if. thread[%u][%u]\n", i, j);
 	if ((i >= padding) && (j >= padding) && (i < width - padding) && (j < height - padding)) {
 		float tmp = 0.0;
 		for (uint filterX = 0; filterX < filterSize; ++filterX) {
@@ -83,11 +90,9 @@ __global__ void kernel(int width, int height, int filterSize, float *filt, uchar
 				uint imageX = (i - padding + filterX);
 				uint imageY = (j - padding + filterY);
 				tmp += ((float) img[imageX * width + imageY] * (float) filt[filterX * filterSize + filterY]);
-				printf("thread[%u][%u]: tmp = %f * %f\n", i, j, (float) img[imageX * width + imageY], (float) filt[filterX * filterSize + filterY]);
 			}
 		}
 		out[index] = (uchar) (tmp < 0) ? 0 : ((tmp > 255) ? 255 : tmp);
-		printf("I'm thread [%u][%u] and tmp = %f\n", i, j, tmp);
 	}
 }
 
@@ -127,6 +132,7 @@ int main(int argc, char **argv) {
 	for (x = 0; x < color; ++x) {
 		if (pinned) {
 			cudaMallocHost((uchar **) &channels[x], numBytesImage);
+			CheckCudaError((char *) "1 - line: ", __LINE__);
 		} else {
 			channels[x] = (uchar *) malloc(len * sizeof(uchar));
 		}
@@ -149,6 +155,7 @@ int main(int argc, char **argv) {
 
 	if (pinned) {
 		cudaMallocHost((float **) &filter, numBytesFilter);
+		CheckCudaError((char *) "2 - line: ", __LINE__);
 	} else {
 		filter = (float *) malloc(numBytesFilter * sizeof(float));
 	}
@@ -169,19 +176,26 @@ int main(int argc, char **argv) {
 	cudaEventCreate(&E1);
 	cudaEventCreate(&E2);
 	cudaEventCreate(&E3);
+	CheckCudaError((char *) "3 - line: ", __LINE__);
 
 	cudaEventRecord(E0, 0);
 	cudaEventSynchronize(E0);
+	CheckCudaError((char *) "4 - line: ", __LINE__);
 
 	// Get memory in device and send data
 	// Filter
 	cudaMalloc((float**) &filterDevice, numBytesFilter); 
+	CheckCudaError((char *) "5 - line: ", __LINE__);
 	cudaMemcpy(filterDevice, filter, numBytesFilter, cudaMemcpyHostToDevice);
+	CheckCudaError((char *) "6 - line: ", __LINE__);
 	// Image
 	for (x = 0; x < color; ++x) {
 		cudaMalloc((uchar **) &channelsDevice[x], numBytesImage);
+		CheckCudaError((char *) "7 - line: ", __LINE__);
 		cudaMalloc((uchar **) &outputDevice[x], numBytesImage);
+		CheckCudaError((char *) "8 - line: ", __LINE__);
 		cudaMemcpy(channelsDevice[x], channels[x], numBytesImage, cudaMemcpyHostToDevice);
+		CheckCudaError((char *) "9 - line: ", __LINE__);
 	}
 
 	cudaEventRecord(E1, 0);
@@ -190,6 +204,7 @@ int main(int argc, char **argv) {
 	// Execute the kernel
 	for (x = 0; x < color; ++x) {
 		kernel<<<dimGrid, dimBlock>>>(width, height, filterSize, filterDevice, channelsDevice[x], outputDevice[x]);
+		CheckCudaError((char *) "10 - line: ", __LINE__);
 		cudaDeviceSynchronize();
 	}
 	
@@ -199,23 +214,14 @@ int main(int argc, char **argv) {
 
 	// Get the result to the host and free memory
 	cudaFree(filterDevice);
+	CheckCudaError((char *) "11 - line: ", __LINE__);
 	for (x = 0; x < color; ++x) {
-		// debug
-		for (i = 0; i < width; ++i) {
-			for (j = 0; j < height; ++j) {
-				printf("%u\t", (channels[x])[i * width + j]);
-			}
-			printf("\n");
-		}
 		cudaMemcpy(channels[x], outputDevice[x], numBytesImage, cudaMemcpyDeviceToHost);
-		for (i = 0; i < width; ++i) {
-			for (j = 0; j < height; ++j) {
-				printf("%u\t", (channels[x])[i * width + j]);
-			}
-			printf("\n");
-		}
+		CheckCudaError((char *) "12 - line: ", __LINE__);
 		cudaFree(channelsDevice[x]);
+		CheckCudaError((char *) "13 - line: ", __LINE__);
 		cudaFree(outputDevice[x]);
+		CheckCudaError((char *) "14 - line: ", __LINE__);
 	}
 
 	//recordEvent(E3);
@@ -225,12 +231,11 @@ int main(int argc, char **argv) {
 	cudaEventElapsedTime(&TiempoTotal,  E0, E3);
 	cudaEventElapsedTime(&TiempoKernel, E1, E2);
 
-	// Print results. TODO
-
 	cudaEventDestroy(E0);
 	cudaEventDestroy(E1);
 	cudaEventDestroy(E2);
 	cudaEventDestroy(E3);
+	CheckCudaError((char *) "15 - line: ", __LINE__);
 
 	// Rejoin the channels to save the image
     for (i = 0, j = 0; i < bitDepth*len; i += bitDepth, ++j){
@@ -242,12 +247,14 @@ int main(int argc, char **argv) {
 	// Free memory of the host
 	if (pinned) {
 		cudaFreeHost(filter);
+		CheckCudaError((char *) "16 - line: ", __LINE__);
 	} else {
 		free(filter);
 	}
 	for (x = 0; x < color; ++x) {
 		if (pinned) {
 			cudaFreeHost(channels[x]);
+			CheckCudaError((char *) "17 - line: ", __LINE__);
 		} else {
 			free(channels[x]);
 		}
