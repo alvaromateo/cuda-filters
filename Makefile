@@ -10,11 +10,9 @@ BUILDDIR = ./build/
 FILTER = filter-
 DEPS = stb_image.h stb_image_write.h readCommandLine.h
 
-## To be added in the futur:
-## 	multiCardAsyn multiCardSyn
-
-EXEFILTERS  = sequential singleCardAsyn singleCardSyn 
-OBJFILTERS  = sequential.o singleCardAsyn.o singleCardSyn.o
+## multiCardAsyn
+EXEFILTERS  = sequential singleCardAsyn singleCardSyn multiCardSyn
+OBJFILTERS  = sequential.o singleCardAsyn.o singleCardSyn.o multiCardSyn.o
 OBJINCLUDES = $(addprefix $(BUILDDIR),$(OBJFILTERS))
 EXES = $(addsuffix .exe, $(EXEFILTERS))
 

@@ -123,9 +123,9 @@ int main(int argc, char **argv) {
 
 	for (x = 0; x < color; ++x) {
 		// Only pinned memory allowed with streams
-		cudaMallocHost((uchar **) &channels[x], numBytesImage);	
+		cudaMallocHost((uchar **) &(channels[x]), numBytesImage);	
 	}
-	
+		
 	// Initialize matrixs
 	for (i = 0, j = 0; i < bitDepth*len; i += bitDepth, ++j){
 		for (x = 0; x < color; ++x) { // we leave the alpha channel unchanged
@@ -144,7 +144,7 @@ int main(int argc, char **argv) {
     // Only pinned memory allowed
 	cudaMallocHost((float **) &filter, numBytesFilter);
 	initFilter(filter, filterSize * filterSize, filterType);
-
+	
     // Variables to calculate time spent in each job
 	float TiempoTotal;
 	cudaEvent_t E0, E3;
@@ -218,17 +218,9 @@ int main(int argc, char **argv) {
 	}
 
 	// Free memory of the host
-	if (pinned) {
-		cudaFreeHost(filter);
-	} else {
-		free(filter);
-	}
+	cudaFreeHost(filter);
 	for (x = 0; x < color; ++x) {
-		if (pinned) {
-			cudaFreeHost(channels[x]);
-		} else {
-			free(channels[x]);
-		}
+		cudaFreeHost(channels[x]);
 	}
 	free(channels);
 	free(channelsDevice);
