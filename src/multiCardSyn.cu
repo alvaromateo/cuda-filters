@@ -211,9 +211,9 @@ int main(int argc, char **argv) {
 	}
 
 	cudaSetDevice(0);
-	cudaEventSynchronize(X1);
-	cudaEventSynchronize(X2);
-	cudaEventSynchronize(X3);
+	for (x = 0; x < color - 1; ++x) {
+		cudaEventSynchronize(cEvents[x]);
+	}
 
 	cudaEventRecord(E3, 0); 
 	cudaEventSynchronize(E3);
