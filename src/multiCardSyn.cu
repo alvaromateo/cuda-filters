@@ -123,16 +123,12 @@ int main(int argc, char **argv) {
     uchar **outputDevice = (uchar **) malloc(color * sizeof(uchar *));
     
 	//Separate the channels
-	uint i, j, x;
+	uint i, j, x, y;
 	uint len = width * height;
 	uint numBytesImage = len * sizeof(uchar);
 
 	for (x = 0; x < color; ++x) {
-		if (pinned) {
-			cudaMallocHost((uchar **) &channels[x], numBytesImage);
-		} else {
-			channels[x] = (uchar *) malloc(len * sizeof(uchar));
-		}
+		cudaMallocHost((uchar **) &channels[x], numBytesImage);
 	}
 	
 	// Initialize matrixs
@@ -150,16 +146,13 @@ int main(int argc, char **argv) {
     filterSize = getFiltersize(filterType);
     numBytesFilter = filterSize * filterSize * sizeof(float);
 
-	if (pinned) {
-		cudaMallocHost((float **) &filter, numBytesFilter);
-	} else {
-		filter = (float *) malloc(numBytesFilter * sizeof(float));
-	}
+	cudaMallocHost((float **) &filter, numBytesFilter);
 	initFilter(filter, filterSize * filterSize, filterType);
 
     // Variables to calculate time spent in each job
 	float TiempoTotal, TiempoKernel;
 	cudaEvent_t E0, E1, E2, E3;
+	cudaEvent_t cEvents[color-1];
 
 	// Number of blocks in each dimension 
 	uint nBlocksX = (width + threads - 1) / threads; 
@@ -168,51 +161,72 @@ int main(int argc, char **argv) {
 	dim3 dimGrid(nBlocksX, nBlocksY, 1);
 	dim3 dimBlock(threads, threads, 1);
 
+	// Get memory in device and send data
+	for (x = 0; x < color; ++x) {
+		cudaSetDevice(x);
+		// Filter
+		cudaMalloc((float**) &filterDevice, numBytesFilter); 
+		// Image
+		for (y = 0; y < color; ++y) {
+			cudaMalloc((uchar **) &channelsDevice[y], numBytesImage);
+			cudaMalloc((uchar **) &outputDevice[y], numBytesImage);
+		}
+
+		if (x > 0) {
+			cudaEventCreate(&(cEvents[x]));
+		}
+	}
+
+	cudaSetDevice(0);
 	cudaEventCreate(&E0);
 	cudaEventCreate(&E1);
 	cudaEventCreate(&E2);
 	cudaEventCreate(&E3);
 
 	cudaEventRecord(E0, 0);
-	cudaEventSynchronize(E0);
 
-	// Get memory in device and send data
-	for (x = 0; x < color; ++x) {
-		cudaSetDevice(x);
-		// Filter
-		cudaMalloc((float**) &filterDevice, numBytesFilter); 
-		cudaMemcpy(filterDevice, filter, numBytesFilter, cudaMemcpyHostToDevice);
-		// Image
-		cudaMalloc((uchar **) &channelsDevice[x], numBytesImage);
-		cudaMalloc((uchar **) &outputDevice[x], numBytesImage);
-		cudaMemcpy(channelsDevice[x], channels[x], numBytesImage, cudaMemcpyHostToDevice);
-	}
+	// Copy data from host to device
+	cudaMemcpyAsync(filterDevice, filter, numBytesFilter, cudaMemcpyHostToDevice);
+	cudaMemcpyAsync(channelsDevice[0], channels[0], numBytesImage, cudaMemcpyHostToDevice);
 
-	cudaEventRecord(E1, 0);
-	cudaEventSynchronize(E1);
-
-	// Execute the kernel
-	for (x = 0; x < color; ++x) {
-		cudaSetDevice(x);
-		kernel<<<dimGrid, dimBlock>>>(width, height, filterSize, filterDevice, channelsDevice[x], outputDevice[x]);
-	}
+	cudaEventRecord(E1, 0); 
 	
-	//recordEvent(E2);
-	cudaEventRecord(E2, 0);
+	// Execute kernel 
+	kernel<<<dimGrid, dimBlock>>>(width, height, filterSize, filterDevice, channelsDevice[0], outputDevice[0]);
+	cudaEventRecord(E2, 0); 
 	cudaEventSynchronize(E2);
+	
+	// Obtener el resultado desde el host 
+	cudaMemcpyAsync(channels[0], outputDevice[0], numBytesImage, cudaMemcpyDeviceToHost);
+
+	for (x = 1; x < color; ++x) {
+		cudaMemcpyAsync(filterDevice, filter, numBytesFilter, cudaMemcpyHostToDevice);
+		cudaMemcpyAsync(channelsDevice[x], channels[x], numBytesImage, cudaMemcpyHostToDevice);
+
+		kernel<<<dimGrid, dimBlock>>>(width, height, filterSize, filterDevice, channelsDevice[x], outputDevice[x]);
+
+		cudaMemcpyAsync(channels[x], outputDevice[x], numBytesImage, cudaMemcpyDeviceToHost);
+
+		cudaEventRecord(cEvents[x-1], 0);
+	}
+
+	cudaSetDevice(0);
+	cudaEventSynchronize(X1);
+	cudaEventSynchronize(X2);
+	cudaEventSynchronize(X3);
+
+	cudaEventRecord(E3, 0); 
+	cudaEventSynchronize(E3);
 
 	// Get the result to the host and free memory
 	for (x = 0; x < color; ++x) {
-		cudaSetDevice(x); 
+		cudaSetDevice(x);
 		cudaFree(filterDevice);
-		cudaMemcpy(channels[x], outputDevice[x], numBytesImage, cudaMemcpyDeviceToHost);
-		cudaFree(channelsDevice[x]);
-		cudaFree(outputDevice[x]);
+		for (y = 0; y < color; ++y) {
+			cudaFree(channelsDevice[x]);
+			cudaFree(outputDevice[x]);
+		}
 	}
-
-	//recordEvent(E3);
-	cudaEventRecord(E3, 0);
-	cudaEventSynchronize(E3);
 
 	cudaEventElapsedTime(&TiempoTotal,  E0, E3);
 	cudaEventElapsedTime(&TiempoKernel, E1, E2);
@@ -220,15 +234,19 @@ int main(int argc, char **argv) {
 	printf("Dimensiones: %dx%dx%d\n", width, height, color);
 	printf("nThreads: %dx%d (%d)\n", threads, threads, threads * threads);
 	printf("nBlocks: %dx%d (%d)\n", nBlocksX, nBlocksY, nBlocksX * nBlocksY);
-	if (pinned) printf("Usando Pinned Memory\n");
-		else printf("NO usa Pinned Memory\n");
+	printf("Usando Pinned Memory\n");
 	printf("Tiempo Global: %4.6f milseg\n", TiempoTotal);
 	printf("Tiempo Kernel: %4.6f milseg\n", TiempoKernel);
 
+	cudaSetDevice(0);
 	cudaEventDestroy(E0);
 	cudaEventDestroy(E1);
 	cudaEventDestroy(E2);
 	cudaEventDestroy(E3);
+
+	for (x = 1; x < color; ++x) {
+		cudaEventDestroy(cEvents[x-1]);
+	}
 
 	// Rejoin the channels to save the image
     for (i = 0, j = 0; i < bitDepth*len; i += bitDepth, ++j){
@@ -238,17 +256,9 @@ int main(int argc, char **argv) {
 	}
 
 	// Free memory of the host
-	if (pinned) {
-		cudaFreeHost(filter);
-	} else {
-		free(filter);
-	}
+	cudaFreeHost(filter);
 	for (x = 0; x < color; ++x) {
-		if (pinned) {
-			cudaFreeHost(channels[x]);
-		} else {
-			free(channels[x]);
-		}
+		cudaFreeHost(channels[x]);
 	}
 	free(channels);
 	free(channelsDevice);
